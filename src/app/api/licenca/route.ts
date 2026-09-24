@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { apiPapel } from "@/lib/api-auth";
-import { licencaEfetivamenteAtiva, diasRestantes } from "@/lib/licenca";
+import {
+  licencaEfetivamenteAtiva,
+  diasRestantes,
+  garantirLicenca,
+} from "@/lib/licenca";
 
 // GET /api/licenca  -> estado da licença + histórico de pagamentos da loja
 export async function GET() {
@@ -9,12 +13,7 @@ export async function GET() {
   if (r.response) return r.response;
 
   // Garante que a loja tem licença (período de avaliação de 10 dias).
-  await pool.query(
-    `INSERT INTO licenca (loja_id, estado, data_inicio, data_fim)
-     VALUES ($1, 'ativa', now(), now() + interval '10 days')
-     ON CONFLICT (loja_id) DO NOTHING`,
-    [r.sessao.lojaId]
-  );
+  await garantirLicenca(r.sessao.lojaId);
 
   const lic = await pool.query(
     `SELECT lc.id, lc.estado, lc.plano, lc.valor_mensal, lc.data_inicio, lc.data_fim,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -233,14 +234,23 @@ table{width:100%;border-collapse:collapse;margin-top:16px}th,td{text-align:left;
       {erro && <Alert tone="error">{erro}</Alert>}
       {aviso && <Alert tone="success">{aviso}</Alert>}
 
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-50">
-          Licença <span className="text-zinc-500">· {dados.loja.nome}</span>
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          Assinatura mensal do ShopLink. Renove antes de expirar para manter a loja
-          sempre ativa.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-50">
+            Licença <span className="text-zinc-500">· {dados.loja.nome}</span>
+          </h1>
+          <p className="mt-1 text-sm text-zinc-500">
+            Assinatura mensal do ShopLink. Renove antes de expirar para manter a loja
+            sempre ativa.
+          </p>
+        </div>
+        {ativa && (
+          <Link href="/dashboard">
+            <Button variant="outline" size="sm">
+              Ir para o painel
+            </Button>
+          </Link>
+        )}
       </div>
 
       {!ativa && (

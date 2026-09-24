@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { pool } from "@/lib/db";
 import { criarSessao } from "@/lib/auth";
+import { DIAS_TRIAL } from "@/lib/licenca";
 
 const CATEGORIAS_DEFAULT = [
   "Bebidas",
@@ -88,9 +89,9 @@ export async function POST(req: Request) {
     // Licença em período de avaliação gratuita (10 dias)
     await client.query(
       `INSERT INTO licenca (loja_id, estado, data_inicio, data_fim)
-       VALUES ($1, 'ativa', now(), now() + interval '10 days')
+       VALUES ($1, 'ativa', now(), now() + ($2 || ' days')::interval)
        ON CONFLICT (loja_id) DO NOTHING`,
-      [lojaId]
+      [lojaId, String(DIAS_TRIAL)]
     );
 
     await client.query("COMMIT");

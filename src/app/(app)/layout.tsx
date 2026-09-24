@@ -1,6 +1,6 @@
 import { requireSessao } from "@/lib/auth";
 import { pool } from "@/lib/db";
-import { licencaEfetivamenteAtiva } from "@/lib/licenca";
+import { garantirLicenca, licencaEfetivamenteAtiva } from "@/lib/licenca";
 import { AppShell } from "@/components/layout/app-shell";
 import { LicencaPanel } from "@/components/licenca/licenca-panel";
 
@@ -13,6 +13,8 @@ export default async function AppLayout({
 
   // Porta de licença: sem licença ativa (expirada ou bloqueada) o utilizador
   // é levado diretamente para o ecrã de pagamento/renovação da licença.
+  // Se a loja ainda não tem licença, é criado um período de avaliação (10 dias).
+  await garantirLicenca(sessao.lojaId);
   const lic = await pool.query(
     `SELECT estado, data_fim FROM licenca WHERE loja_id = $1`,
     [sessao.lojaId]

@@ -1,4 +1,5 @@
 import "server-only";
+import { pool } from "./db";
 
 // Licença mensal ShopLink: 2.500,00 MZN por loja, paga via NetShop
 // (cartão BCI / BIM). Ao pagar: +30 dias da data_fim se ativa,
@@ -7,6 +8,16 @@ import "server-only";
 export const LICENSE_PREFIX = "LIC_"; // referencia de pagamento das licenças (webhook)
 
 export const DIAS_LICENCA = 30;
+export const DIAS_TRIAL = 10;
+
+export async function garantirLicenca(lojaId: string): Promise<void> {
+  await pool.query(
+    `INSERT INTO licenca (loja_id, estado, data_inicio, data_fim)
+     VALUES ($1, 'ativa', now(), now() + ($2 || ' days')::interval)
+     ON CONFLICT (loja_id) DO NOTHING`,
+    [lojaId, String(DIAS_TRIAL)]
+  );
+}
 
 export type EstadoLicenca = "ativa" | "expirada" | "bloqueada";
 

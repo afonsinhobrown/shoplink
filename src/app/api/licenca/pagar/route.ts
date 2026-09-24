@@ -4,6 +4,7 @@ import { apiPapel } from "@/lib/api-auth";
 import {
   buildLicencaReference,
   aplicarPagamentoLicenca,
+  garantirLicenca,
 } from "@/lib/licenca";
 import { createNetShopCharge } from "@/lib/netshop";
 
@@ -22,23 +23,13 @@ export async function POST(req: Request) {
     );
   }
 
+  await garantirLicenca(r.sessao.lojaId);
   const lic = await pool.query(
     `SELECT lc.id, lc.valor_mensal FROM licenca lc WHERE lc.loja_id = $1`,
     [r.sessao.lojaId]
   );
-  let licencaId: string;
-  let valor: number;
-  if (lic.rows.length > 0) {
-    licencaId = lic.rows[0].id;
-    valor = Number(lic.rows[0].valor_mensal) || 2500;
-  } else {
-    const criada = await pool.query(
-      `INSERT INTO licenca (loja_id) VALUES ($1) RETURNING id, valor_mensal`,
-      [r.sessao.lojaId]
-    );
-    licencaId = criada.rows[0].id;
-    valor = Number(criada.rows[0].valor_mensal) || 2500;
-  }
+  const licencaId: string = lic.rows[0].id;
+  const valor: number = Number(lic.rows[0].valor_mensal) || 2500;
 
   const reference = buildLicencaReference();
 
