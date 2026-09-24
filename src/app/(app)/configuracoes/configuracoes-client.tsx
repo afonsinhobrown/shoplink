@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Field, Switch } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loading, Alert } from "@/components/ui/feedback";
+import { rotuloTipoLoja } from "@/lib/format";
 
 interface LojaConfig {
   id: string;
@@ -97,7 +98,7 @@ export function ConfiguracoesClient({ ehDono }: { ehDono: boolean }) {
               <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} disabled={!ehDono} />
             </Field>
             <Field label="Tipo de loja">
-              <Input value={form.tipo_loja} disabled />
+              <Input value={rotuloTipoLoja(form.tipo_loja)} disabled />
             </Field>
             <Field label="Moeda">
               <Input value={form.moeda} disabled />

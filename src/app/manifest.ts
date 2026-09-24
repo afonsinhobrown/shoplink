@@ -4,8 +4,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "ShopLink — POS Mercearias",
     short_name: "ShopLink",
-    description: "Sistema de gestão e PDV para mercearias e mini mercados",
-    start_url: "/",
+    description: "Sistema de gestão e PDV para mercearias e mini supermercados",
+    start_url: "/dashboard",
     display: "standalone",
     background_color: "#09090b",
     theme_color: "#09090b",

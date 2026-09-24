@@ -19,6 +19,7 @@ import {
   Minus,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { rotuloTipoLoja } from "@/lib/format";
 import { ThemeToggle } from "./theme-toggle";
 
 type Papel = "dono" | "gestor" | "caixa" | "stock";
@@ -164,7 +165,7 @@ export function AppShell({
               <div className="h-2 w-2 rounded-full bg-emerald-500" />
               <p className="text-sm font-medium text-zinc-300">{sessao.lojaNome}</p>
               <span className="rounded-lg border border-zinc-800 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-500">
-                {sessao.tipoLoja}
+                {rotuloTipoLoja(sessao.tipoLoja)}
               </span>
             </div>
             <div className="flex items-center gap-2">

@@ -136,13 +136,13 @@ export default function RegistoPage() {
           <div className="flex items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-950/50 p-4">
             <div>
               <p className="text-sm font-medium text-zinc-200">
-                É um mini mercado?
+                É um mini supermercado?
               </p>
               <p className="text-xs text-zinc-500">
                 Ativa controlo de lotes, validade e código de barras
               </p>
             </div>
-            <Switch checked={mercado} onChange={setMercado} label="Mini mercado" />
+            <Switch checked={mercado} onChange={setMercado} label="Mini supermercado" />
           </div>
 
           {erro && (

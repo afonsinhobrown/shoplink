@@ -1,3 +1,8 @@
+export function rotuloTipoLoja(tipo: string): string {
+  if (tipo === "mini_mercado") return "Mini Supermercado";
+  return "Mercearia";
+}
+
 export function formatarMoeda(valor: number, moeda = "MZN"): string {
   return new Intl.NumberFormat("pt-PT", {
     style: "currency",

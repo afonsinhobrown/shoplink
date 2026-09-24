@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ShopLink — Gestão de Mercearias e Mini Mercados",
+  title: "ShopLink — Gestão de Mercearias e Mini Supermercados",
   description:
     "Sistema POS e de gestão para mercearias e mini supermercados: vendas, stock, fiado e caixa.",
   applicationName: "ShopLink",
