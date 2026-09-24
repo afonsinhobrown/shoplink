@@ -85,6 +85,14 @@ export async function POST(req: Request) {
       );
     }
 
+    // Licença em período de avaliação gratuita (10 dias)
+    await client.query(
+      `INSERT INTO licenca (loja_id, estado, data_inicio, data_fim)
+       VALUES ($1, 'ativa', now(), now() + interval '10 days')
+       ON CONFLICT (loja_id) DO NOTHING`,
+      [lojaId]
+    );
+
     await client.query("COMMIT");
 
     await criarSessao({

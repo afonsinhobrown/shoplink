@@ -8,6 +8,14 @@ export async function GET() {
   const r = await apiPapel("dono", "gestor");
   if (r.response) return r.response;
 
+  // Garante que a loja tem licença (período de avaliação de 10 dias).
+  await pool.query(
+    `INSERT INTO licenca (loja_id, estado, data_inicio, data_fim)
+     VALUES ($1, 'ativa', now(), now() + interval '10 days')
+     ON CONFLICT (loja_id) DO NOTHING`,
+    [r.sessao.lojaId]
+  );
+
   const lic = await pool.query(
     `SELECT lc.id, lc.estado, lc.plano, lc.valor_mensal, lc.data_inicio, lc.data_fim,
             l.nome AS loja_nome, t.nome AS empresa, t.email AS email_empresa
@@ -19,8 +27,8 @@ export async function GET() {
   );
   if (lic.rows.length === 0) {
     return NextResponse.json(
-      { error: "Esta loja não tem licença atribuída." },
-      { status: 404 }
+      { error: "Não foi possível carregar a licença desta loja." },
+      { status: 500 }
     );
   }
   const L = lic.rows[0];

@@ -319,7 +319,7 @@ export default async function LandingPage() {
                 </Button>
               </Link>
               <p className="mt-3 text-center text-xs text-zinc-500">
-                30 dias de avaliação gratuita ao criar conta.
+                10 dias de avaliação gratuita ao criar conta.
               </p>
             </div>
           </div>
