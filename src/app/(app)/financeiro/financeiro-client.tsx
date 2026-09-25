@@ -8,6 +8,7 @@ import { Input, Select, Field } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Loading, EmptyState, Alert } from "@/components/ui/feedback";
 import { formatarMoeda, formatarData } from "@/lib/format";
+import { GraficoDRE } from "@/components/ui/financeiro-graficos";
 
 interface Dados {
   contas: { id: string; nome: string; saldo_inicial: number; saldo_atual: number }[];
@@ -202,24 +203,15 @@ export function FinanceiroClient({ moeda }: { moeda: string }) {
             {drePorMes.length === 0 ? (
               <EmptyState icon={Wallet} title="Sem dados" />
             ) : (
-              <div className="space-y-3">
-                {drePorMes.map(([mes, v]) => (
-                  <div key={mes} className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-300">
-                        {new Date(mes).toLocaleDateString("pt-PT", { month: "long", year: "numeric" })}
-                      </span>
-                      <span className={`text-sm font-semibold ${v.receita - v.despesa >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                        {formatarMoeda(v.receita - v.despesa, moeda)}
-                      </span>
-                    </div>
-                    <div className="mt-1 flex gap-3 text-xs text-zinc-500">
-                      <span>Receitas: {formatarMoeda(v.receita, moeda)}</span>
-                      <span>Despesas: {formatarMoeda(v.despesa, moeda)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <GraficoDRE
+                moeda={moeda}
+                dados={drePorMes.map(([mes, v]) => ({
+                  mes: new Date(mes).toLocaleDateString("pt-PT", { month: "short" }),
+                  receita: v.receita,
+                  despesa: v.despesa,
+                  saldo: v.receita - v.despesa
+                }))}
+              />
             )}
           </div>
         </Card>

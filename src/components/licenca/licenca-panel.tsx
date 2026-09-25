@@ -360,44 +360,42 @@ table{width:100%;border-collapse:collapse;margin-top:16px}th,td{text-align:left;
         </div>
       </Card>
 
-      <Card>
-        <CardHeader
-          title="Controlo administrativo"
-          subtitle="Ativar, bloquear e emitir recibos da licença."
-        />
-        <div className="flex flex-wrap gap-2 p-5">
-          {podePagar ? (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={aAcao !== null}
-                onClick={() => acao("reativar")}
-              >
-                {aAcao === "reativar" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Unlock className="h-4 w-4" />
-                )}
-                Ativar
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                disabled={aAcao !== null}
-                onClick={() => acao("bloquear")}
-              >
-                {aAcao === "bloquear" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ShieldCheck className="h-4 w-4" />
-                )}
-                Bloquear
-              </Button>
-            </>
-          ) : null}
-        </div>
-      </Card>
+      {papel === "superadmin" && (
+        <Card>
+          <CardHeader
+            title="Controlo administrativo"
+            subtitle="Ativar, bloquear e emitir recibos da licença."
+          />
+          <div className="flex flex-wrap gap-2 p-5">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={aAcao !== null}
+              onClick={() => acao("reativar")}
+            >
+              {aAcao === "reativar" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Unlock className="h-4 w-4" />
+              )}
+              Ativar
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              disabled={aAcao !== null}
+              onClick={() => acao("bloquear")}
+            >
+              {aAcao === "bloquear" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ShieldCheck className="h-4 w-4" />
+              )}
+              Bloquear
+            </Button>
+          </div>
+        </Card>
+      )}
 
       <Card>
         <CardHeader

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { BarChart3, Loader2, TrendingUp } from "lucide-react";
+import { BarChart3, Loader2, TrendingUp, Printer } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Loading, EmptyState, Alert } from "@/components/ui/feedback";
 import { formatarMoeda, formatarData } from "@/lib/format";
@@ -66,7 +66,7 @@ export function RelatoriosClient({ moeda }: { moeda: string }) {
           </h1>
           <p className="mt-1 text-sm text-zinc-500">Desempenho de vendas do período.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 print:hidden">
           {PERIODOS.map((p) => (
             <button
               key={p.dias}
@@ -80,6 +80,12 @@ export function RelatoriosClient({ moeda }: { moeda: string }) {
               {p.label}
             </button>
           ))}
+          <button
+            onClick={() => window.print()}
+            className="rounded-full border border-zinc-800 bg-zinc-900 px-3.5 py-1.5 text-xs font-medium text-zinc-400 hover:border-zinc-700 hover:text-zinc-300 transition-colors flex items-center gap-1.5"
+          >
+            <Printer className="h-3.5 w-3.5" /> Exportar PDF
+          </button>
         </div>
       </div>
 

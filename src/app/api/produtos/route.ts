@@ -18,7 +18,7 @@ export async function GET(req: Request) {
            p.tipo_venda, p.unidade_medida,
            p.preco_custo, p.preco_venda,
            p.controla_stock, p.stock_minimo, p.ativo,
-           p.disponivel_online, p.descricao_publica,
+           p.disponivel_online, p.descricao_publica, p.isento_imposto,
            COALESCE(v.quantidade_atual, 0) AS stock_atual
     FROM produto p
     LEFT JOIN categoria c ON c.id = p.categoria_id
@@ -60,6 +60,7 @@ export async function POST(req: Request) {
     stock_minimo = 0,
     disponivel_online = false,
     descricao_publica,
+    isento_imposto = false,
   } = body;
 
   if (!nome?.trim()) {
@@ -73,15 +74,15 @@ export async function POST(req: Request) {
     const result = await pool.query(
       `INSERT INTO produto (loja_id, categoria_id, fornecedor_id, nome, codigo_barras, sku_interno,
                            tipo_venda, unidade_medida, preco_custo, preco_venda, controla_stock, stock_minimo,
-                           disponivel_online, descricao_publica)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                           disponivel_online, descricao_publica, isento_imposto)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING id`,
       [
         r.sessao.lojaId, categoria_id ?? null, fornecedor_id ?? null,
         nome.trim(), codigo_barras ?? null, sku_interno ?? null,
         tipo_venda, unidade_medida, Number(preco_custo) || 0, Number(preco_venda) || 0,
         controla_stock, Number(stock_minimo) || 0,
-        disponivel_online ?? false, descricao_publica ?? null,
+        disponivel_online ?? false, descricao_publica ?? null, isento_imposto ?? false,
       ]
     );
     return NextResponse.json(result.rows[0], { status: 201 });

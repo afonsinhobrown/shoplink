@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description:
     "Sistema POS e de gestão para mercearias e mini supermercados: vendas, stock, fiado e caixa.",
   applicationName: "ShopLink",
-  manifest: "/manifest.webmanifest",
+  manifest: "/manifest.json",
   icons: {
     icon: "/icon-192.png",
     apple: "/icon-192.png",

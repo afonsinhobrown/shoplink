@@ -27,6 +27,9 @@ interface LojaConfig {
   telefone: string | null;
   nuit: string | null;
   plano: string;
+  imposto_padrao: number;
+  logotipo_url: string | null;
+  tempo_inatividade: number;
 }
 
 interface Utilizador { id: string; papel: string; nome: string; email: string; ativo: boolean }
@@ -97,6 +100,12 @@ export function ConfiguracoesClient({ ehDono }: { ehDono: boolean }) {
             <Field label="Loja">
               <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} disabled={!ehDono} />
             </Field>
+            <Field label="Logotipo (URL da imagem)">
+              <Input value={form.logotipo_url ?? ""} onChange={(e) => set("logotipo_url", e.target.value)} disabled={!ehDono} placeholder="https://exemplo.com/logo.png" />
+            </Field>
+            <Field label="Imposto Padrão (IVA %)">
+              <Input type="number" min="0" step="0.01" value={form.imposto_padrao ?? 0} onChange={(e) => set("imposto_padrao", parseFloat(e.target.value) || 0)} disabled={!ehDono} />
+            </Field>
             <Field label="Tipo de loja">
               <Input value={rotuloTipoLoja(form.tipo_loja)} disabled />
             </Field>
@@ -113,6 +122,28 @@ export function ConfiguracoesClient({ ehDono }: { ehDono: boolean }) {
           <div className="mt-1 flex items-center justify-between rounded-xl bg-zinc-950/50 px-3.5 py-2.5 text-sm">
             <span className="text-zinc-500">Email da empresa</span>
             <span className="text-zinc-300">{form.email_empresa ?? "—"}</span>
+          </div>
+        </section>
+
+        {/* Segurança */}
+        <section className="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-5">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-400">
+            Segurança da Sessão
+          </h2>
+          <div className="space-y-4">
+            <Field label="Tempo máximo de inatividade (segundos)">
+              <Input
+                type="number"
+                min="30"
+                step="1"
+                value={form.tempo_inatividade ?? 60}
+                onChange={(e) => set("tempo_inatividade", parseInt(e.target.value) || 60)}
+                disabled={!ehDono}
+              />
+              <p className="mt-1 text-xs text-zinc-500">
+                Se não houver atividade (movimento de rato, cliques ou teclado) durante este tempo, a sessão será encerrada.
+              </p>
+            </Field>
           </div>
         </section>
 

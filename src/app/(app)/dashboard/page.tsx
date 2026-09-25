@@ -17,6 +17,8 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/feedback";
 
+import { GraficoVendas } from "@/components/ui/dashboard-graficos";
+
 export default async function DashboardPage() {
   const sessao = await requireSessao();
   const d = await getDashboard(sessao);
@@ -63,6 +65,21 @@ export default async function DashboardPage() {
           accent={d.stockBaixo.length > 0 ? "rose" : "emerald"}
         />
       </div>
+
+      {d.vendas7Dias && d.vendas7Dias.length > 0 && (
+        <Card>
+          <CardHeader title="Evolução de Vendas (Últimos 7 dias)" />
+          <div className="p-5 pt-0">
+            <GraficoVendas
+              moeda={moeda}
+              dados={d.vendas7Dias.map(v => ({
+                data: new Date(v.data).toLocaleDateString("pt-PT", { day: "numeric", month: "short" }),
+                total: Number(v.total)
+              }))}
+            />
+          </div>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-5">
         {/* Últimas vendas */}

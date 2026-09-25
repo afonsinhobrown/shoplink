@@ -18,11 +18,13 @@ import {
   WifiOff,
   ScanLine,
   PackageX,
+  AlertTriangle,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { formatarMoeda } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Field } from "@/components/ui/input";
+import { QRCodeSVG } from "qrcode.react";
 import { Modal } from "@/components/ui/modal";
 import { Badge } from "@/components/ui/badge";
 import { Loading, EmptyState } from "@/components/ui/feedback";
@@ -55,12 +57,16 @@ export function PosClient({
   moeda,
   permiteVendaFiado,
   papel,
+  caixaAberto,
+  loja,
 }: {
   moeda: string;
   modoPos: string;
   permiteVendaFiado: boolean;
   controlaLote: boolean;
   papel: string;
+  caixaAberto: boolean;
+  loja: { nome: string; nuit: string; endereco: string; telefone: string };
 }) {
   const [produtos, setProdutos] = useState<ProdutoDTO[]>([]);
   const [clientes, setClientes] = useState<ClienteDTO[]>([]);
@@ -74,7 +80,7 @@ export function PosClient({
   const [checkout, setCheckout] = useState(false);
   const [finalizando, setFinalizando] = useState(false);
   const [erro, setErro] = useState("");
-  const [recibo, setRecibo] = useState<{ numero_recibo: string; total: number; status: string } | null>(null);
+  const [recibo, setRecibo] = useState<{ numero_recibo: string; total: number; status: string; itens: CartItem[]; recebido?: number; troco?: number } | null>(null);
   const [online, setOnline] = useState(true);
   const [fila, setFila] = useState<Pendente[]>([]);
   const [sincronizando, setSincronizando] = useState(false);
@@ -185,6 +191,11 @@ export function PosClient({
   const troco = Math.max(Number(recebido || 0) - total, 0);
 
   function adicionar(p: ProdutoDTO) {
+    if (!caixaAberto) {
+      setErro("Tem de abrir o Caixa primeiro para poder adicionar produtos ao carrinho.");
+      return;
+    }
+    setErro("");
     setCarrinho((c) => {
       const existente = c.find((i) => i.produto.id === p.id);
       if (existente) {
@@ -251,7 +262,7 @@ export function PosClient({
           "/api/vendas",
           { method: "POST", body: JSON.stringify(payload) }
         );
-        setRecibo(venda);
+        setRecibo({ ...venda, itens: [...carrinho], recebido: Number(recebido), troco });
         setCarrinho([]);
         setDesconto(0);
         setRecebido("");
@@ -266,7 +277,7 @@ export function PosClient({
           criadoEm: new Date().toISOString(),
         } satisfies Pendente;
         guardarFila([...fila, pendente]);
-        setRecibo({ numero_recibo: "OFFLINE", total, status: "pendente_fiado" });
+        setRecibo({ numero_recibo: "OFFLINE", total, status: "pendente_fiado", itens: [...carrinho], recebido: Number(recebido), troco });
         setCarrinho([]);
         setDesconto(0);
         setRecebido("");
@@ -307,6 +318,17 @@ export function PosClient({
               ? "A sincronizar vendas offline…"
               : `${fila.length} venda${fila.length > 1 ? "s" : ""} offline à espera de sincronização`}
           </span>
+        </div>
+      )}
+      {!caixaAberto && (
+        <div className="mb-4 flex items-center justify-between rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            <span>O Caixa está fechado. Tem de o abrir na página do Caixa para poder faturar.</span>
+          </div>
+          <Link href="/caixa" className="rounded-lg bg-rose-500/20 px-3 py-1.5 font-medium text-rose-200 hover:bg-rose-500/30">
+            Ir para Caixa
+          </Link>
         </div>
       )}
 
@@ -466,7 +488,7 @@ export function PosClient({
               <Button
                 size="lg"
                 className="mt-4 w-full"
-                disabled={carrinho.length === 0}
+                disabled={carrinho.length === 0 || !caixaAberto}
                 onClick={() => {
                   setErro("");
                   setCheckout(true);
@@ -605,6 +627,14 @@ export function PosClient({
       >
         {recibo && (
           <div className="flex flex-col items-center gap-3 py-4 text-center" id="recibo-imprimir">
+            <div className="mb-2 w-full text-center">
+              <h3 className="text-xl font-bold text-zinc-100">{loja.nome}</h3>
+              {loja.endereco && <p className="text-xs text-zinc-500">{loja.endereco}</p>}
+              <p className="text-xs text-zinc-500">
+                {loja.nuit && `NUIT: ${loja.nuit}`} {loja.nuit && loja.telefone && "| "} {loja.telefone && `Tel: ${loja.telefone}`}
+              </p>
+            </div>
+
             <div className="rounded-full bg-emerald-500/15 p-3">
               <CheckCircle2 className="h-8 w-8 text-emerald-400" />
             </div>
@@ -621,23 +651,86 @@ export function PosClient({
                   : `${METODO_INFO[metodo].label} · ${new Date().toLocaleTimeString("pt-PT")}`}
               </p>
             </div>
-            <div className="mt-2 w-full border-t border-dashed border-zinc-700 pt-3 text-left">
-              <p className="text-xs text-zinc-500">ShopLink · {formatarMoeda(total, moeda)}</p>
+            
+            <div className="mt-3 w-full border-t border-dashed border-zinc-700 pt-3 text-left">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-zinc-800 text-zinc-500">
+                    <th className="pb-1 text-left font-medium">Qtd</th>
+                    <th className="pb-1 text-left font-medium">Descrição</th>
+                    <th className="pb-1 text-right font-medium">Preço</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/50">
+                  {recibo.itens.map(i => (
+                    <tr key={i.produto.id}>
+                      <td className="py-1 text-zinc-300">{i.quantidade}</td>
+                      <td className="py-1 text-zinc-300 line-clamp-1">{i.produto.nome}</td>
+                      <td className="py-1 text-right text-zinc-300">{formatarMoeda(i.quantidade * i.produto.preco_venda, moeda)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {metodo === "dinheiro" && (
+              <div className="w-full text-right text-xs text-zinc-400 mt-2">
+                <p>Dinheiro: {formatarMoeda(recibo.recebido || 0, moeda)}</p>
+                <p>Troco: {formatarMoeda(recibo.troco || 0, moeda)}</p>
+              </div>
+            )}
+
+            <div className="mt-4 flex justify-center bg-white p-2 rounded-xl">
+              <QRCodeSVG 
+                value={`${loja.nome}\n${recibo.numero_recibo}\nTotal: ${formatarMoeda(Number(recibo.total), moeda)}\n${recibo.itens.length} itens`} 
+                size={120} 
+              />
+            </div>
+
+            <div className="mt-2 w-full border-t border-dashed border-zinc-700 pt-3 text-center">
+              <p className="text-xs text-zinc-500">Obrigado pela preferência!</p>
+              <p className="text-[10px] text-zinc-600 mt-1">Processado por ShopLink</p>
             </div>
 
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full mt-4 hidden-print"
               onClick={() => {
+                const html = document.getElementById("recibo-imprimir")?.innerHTML;
                 const imprime = window.open("", "_blank");
-                if (imprime) {
-                  imprime.document.write(`<pre>${recibo.numero_recibo}\nTotal: ${formatarMoeda(Number(recibo.total), moeda)}\n${new Date().toLocaleString("pt-PT")}</pre>`);
+                if (imprime && html) {
+                  imprime.document.write(`
+                    <html>
+                      <head>
+                        <title>Recibo ${recibo.numero_recibo}</title>
+                        <style>
+                          body { font-family: monospace; width: 300px; margin: 0 auto; padding: 10px; color: black; background: white; }
+                          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                          th, td { padding: 4px 0; font-size: 12px; }
+                          th { text-align: left; border-bottom: 1px dashed black; }
+                          .text-right { text-align: right; }
+                          .text-center { text-align: center; }
+                          .font-bold { font-weight: bold; }
+                          .text-xl { font-size: 18px; margin: 0; }
+                          .text-xs { font-size: 10px; margin: 2px 0; }
+                          .text-2xl { font-size: 24px; margin: 5px 0; }
+                          .border-t { border-top: 1px dashed black; margin-top: 10px; padding-top: 10px; }
+                          .bg-emerald-500\\/15 { display: none; }
+                          .hidden-print { display: none !important; }
+                          .flex { display: flex; flex-direction: column; align-items: center; }
+                          svg { display: block; margin: 0 auto; }
+                        </style>
+                      </head>
+                      <body onload="window.print(); window.close();">
+                        ${html}
+                      </body>
+                    </html>
+                  `);
                   imprime.document.close();
-                  imprime.print();
                 }
               }}
             >
-              <ScanLine className="h-4 w-4" /> Imprimir recibo
+              <ScanLine className="h-4 w-4 mr-2" /> Imprimir recibo
             </Button>
           </div>
         )}

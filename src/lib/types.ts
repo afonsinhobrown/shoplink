@@ -23,6 +23,7 @@ export interface ProdutoDTO {
   ativo: boolean;
   disponivel_online: boolean;
   descricao_publica?: string | null;
+  isento_imposto?: boolean;
 }
 
 export interface CategoriaDTO {

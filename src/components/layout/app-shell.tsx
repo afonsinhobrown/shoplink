@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -81,6 +82,7 @@ export function AppShell({
     lojaNome: string;
     tipoLoja: string;
     moeda: string;
+    tempo_inatividade: number;
   };
 }) {
   const pathname = usePathname();
@@ -94,15 +96,40 @@ export function AppShell({
     router.refresh();
   }
 
+  const inactivityTimer = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const resetTimer = () => {
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+      inactivityTimer.current = setTimeout(() => {
+        logout();
+      }, sessao.tempo_inatividade * 1000);
+    };
+
+    window.addEventListener("mousemove", resetTimer);
+    window.addEventListener("keydown", resetTimer);
+    window.addEventListener("click", resetTimer);
+    window.addEventListener("scroll", resetTimer);
+    
+    resetTimer();
+    return () => {
+      window.removeEventListener("mousemove", resetTimer);
+      window.removeEventListener("keydown", resetTimer);
+      window.removeEventListener("click", resetTimer);
+      window.removeEventListener("scroll", resetTimer);
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+    };
+  }, [sessao.tempo_inatividade]);
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 print:bg-white print:text-black">
       <div className="mx-auto flex min-h-screen max-w-[1600px]">
         {/* Sidebar - desktop */}
-        <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-64 flex-col border-r border-zinc-800/80 bg-zinc-950 px-4 py-6 lg:flex">
+        <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-64 flex-col border-r border-zinc-800/80 bg-zinc-950 px-4 py-6 lg:flex print:hidden">
           <div className="px-2">
             <Logo />
           </div>
-          <nav className="mt-8 flex flex-1 flex-col gap-1">
+          <nav className="mt-6 flex flex-1 flex-col gap-1 overflow-y-auto pr-1">
             {itens.map((item) => {
               const ativo =
                 pathname === item.href ||
@@ -161,9 +188,9 @@ export function AppShell({
         </aside>
 
         {/* Main */}
-        <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
+        <div className="flex min-w-0 flex-1 flex-col lg:pl-64 print:pl-0">
           {/* Topbar */}
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-zinc-800/80 bg-zinc-950/80 px-4 backdrop-blur-xl sm:px-6">
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-zinc-800/80 bg-zinc-950/80 px-4 backdrop-blur-xl sm:px-6 print:hidden">
             <div className="flex items-center gap-3 lg:hidden">
               <Logo />
             </div>
@@ -192,7 +219,7 @@ export function AppShell({
           </header>
 
           {/* Mobile FAB - nova venda */}
-          <div className="lg:hidden">
+          <div className="lg:hidden print:hidden">
             <button
               onClick={() => {
                 if (pathname !== "/pos") router.push("/pos");
@@ -212,7 +239,7 @@ export function AppShell({
           <main className="flex-1 px-4 pb-28 pt-6 sm:px-6 lg:pb-10">{children}</main>
 
           {/* Bottom nav - mobile */}
-          <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800/80 bg-zinc-950/95 backdrop-blur-xl lg:hidden">
+          <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800/80 bg-zinc-950/95 backdrop-blur-xl lg:hidden print:hidden">
             <div className="mx-auto grid max-w-lg grid-cols-5">
               {[
                 { href: "/dashboard", label: "Início", icon: LayoutDashboard },

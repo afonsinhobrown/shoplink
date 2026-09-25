@@ -54,16 +54,32 @@ export async function POST(req: Request) {
     const caixaSessaoId = caixa.rows[0]?.id ?? null;
     const caixaContaId = caixa.rows[0]?.conta_financeira_id ?? null;
 
-    const catFinanceira = await client.query(
+    let catFinanceira = await client.query(
       `SELECT id FROM categoria_financeira WHERE loja_id = $1 AND nome = 'Vendas' LIMIT 1`,
       [r.sessao.lojaId]
     );
+    if (catFinanceira.rows.length === 0) {
+      catFinanceira = await client.query(
+        `INSERT INTO categoria_financeira (loja_id, nome, tipo, sistema) VALUES ($1, 'Vendas', 'receita', true) RETURNING id`,
+        [r.sessao.lojaId]
+      );
+    }
     const categoriaVendasId = catFinanceira.rows[0]?.id ?? null;
 
-    const contasFin = await client.query(
+    let contasFin = await client.query(
       `SELECT id, tipo FROM conta_financeira WHERE loja_id = $1 AND ativo = true`,
       [r.sessao.lojaId]
     );
+    if (contasFin.rows.length === 0) {
+      await client.query(
+        `INSERT INTO conta_financeira (loja_id, nome, tipo, saldo, padrao, sistema) VALUES ($1, 'Caixa Principal', 'numerario', 0, true, true)`,
+        [r.sessao.lojaId]
+      );
+      contasFin = await client.query(
+        `SELECT id, tipo FROM conta_financeira WHERE loja_id = $1 AND ativo = true`,
+        [r.sessao.lojaId]
+      );
+    }
 
     // Recolher produtos e validar stock
     const ids = [...new Set(itens.map((i: { produto_id: string }) => i.produto_id))];
@@ -178,14 +194,14 @@ export async function POST(req: Request) {
 
     for (const p of pagamentoList) {
       let contaDestino = null;
-      if (p.metodo === 'numerario') {
-        contaDestino = caixaContaId;
+      if (p.metodo === 'dinheiro') {
+        contaDestino = caixaContaId || contasFin.rows.find((c) => c.tipo === 'numerario')?.id || contasFin.rows[0]?.id;
       } else if (p.metodo === 'mpesa') {
-        contaDestino = contasFin.rows.find((c) => c.tipo === 'mpesa')?.id ?? null;
+        contaDestino = contasFin.rows.find((c) => c.tipo === 'mpesa')?.id || contasFin.rows[0]?.id;
       } else if (p.metodo === 'emola') {
-        contaDestino = contasFin.rows.find((c) => c.tipo === 'emola')?.id ?? null;
+        contaDestino = contasFin.rows.find((c) => c.tipo === 'emola')?.id || contasFin.rows[0]?.id;
       } else if (['cartao', 'transferencia', 'cheque'].includes(p.metodo)) {
-        contaDestino = contasFin.rows.find((c) => c.tipo === 'banco')?.id ?? null;
+        contaDestino = contasFin.rows.find((c) => c.tipo === 'banco')?.id || contasFin.rows[0]?.id;
       }
 
       await client.query(

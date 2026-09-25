@@ -255,7 +255,7 @@ export function StockClient({
                           perigo ? "text-rose-400" : "text-zinc-50"
                         }`}
                       >
-                        {s.quantidade_atual}
+                        {Number(s.quantidade_atual)}
                       </span>
                       <span className="text-sm text-zinc-500">{s.unidade_medida}</span>
                     </div>
@@ -299,7 +299,7 @@ export function StockClient({
                       className={`text-sm font-bold ${positivo ? "text-emerald-400" : "text-zinc-300"}`}
                     >
                       {positivo ? "+" : ""}
-                      {m.quantidade}
+                      {Number(m.quantidade)}
                     </span>
                   </div>
                 );
@@ -315,6 +315,27 @@ export function StockClient({
         title={modal === "entrada" ? "Entrada de mercadoria" : "Ajuste / Quebra de stock"}
       >
         <form onSubmit={enviar} className="space-y-4">
+          <Field label="Código de Barras (opcional)">
+            <Input
+              autoFocus
+              placeholder="Escaneie o código aqui..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const val = e.currentTarget.value.trim();
+                  if (!val) return;
+                  const prod = produtos.find(p => p.codigo_barras === val);
+                  if (prod) {
+                    setForm(f => ({ ...f, produto_id: prod.id }));
+                    e.currentTarget.value = "";
+                    document.getElementById('qtd-input')?.focus();
+                  } else {
+                    setErro("Produto não encontrado por este código de barras.");
+                  }
+                }
+              }}
+            />
+          </Field>
           <Field label="Produto *">
             <Select
               required
@@ -334,6 +355,7 @@ export function StockClient({
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Quantidade *">
                 <Input
+                  id="qtd-input"
                   type="number"
                   step="0.001"
                   min={0}

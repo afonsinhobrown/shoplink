@@ -4,7 +4,9 @@ import type { Sessao } from "./auth";
 export async function getLojaConfig(sessao: Sessao) {
   const r = await pool.query(
     `SELECT modo_pos, permite_venda_granel, permite_venda_fiado,
-            controla_lote_validade, stock_minimo_ativo, moeda
+            controla_lote_validade, stock_minimo_ativo, moeda,
+            nome, nuit, endereco, telefone,
+            imposto_padrao, logotipo_url
      FROM loja WHERE id = $1`,
     [sessao.lojaId]
   );
@@ -15,7 +17,7 @@ export async function getDashboard(sessao: Sessao) {
   const lojaId = sessao.lojaId;
   const hoje = new Date().toISOString();
 
-  const [vendasHoje, vendasMes, fiado, stockBaixo, top, ultimas] =
+  const [vendasHoje, vendasMes, fiado, stockBaixo, top, ultimas, vendas7D] =
     await Promise.all([
       pool.query(
         `SELECT COALESCE(SUM(total),0) AS total, COUNT(*) AS count
@@ -59,6 +61,14 @@ export async function getDashboard(sessao: Sessao) {
          WHERE v.loja_id=$1 ORDER BY v.data_venda DESC LIMIT 5`,
         [lojaId]
       ),
+      pool.query(
+        `SELECT to_char(date_trunc('day', data_venda), 'YYYY-MM-DD') as data, COALESCE(SUM(total),0) as total
+         FROM venda
+         WHERE loja_id=$1 AND status='concluida' AND data_venda >= now() - interval '7 days'
+         GROUP BY date_trunc('day', data_venda)
+         ORDER BY date_trunc('day', data_venda) ASC`,
+        [lojaId]
+      ),
     ]);
 
   return {
@@ -69,5 +79,6 @@ export async function getDashboard(sessao: Sessao) {
     stockBaixo: stockBaixo.rows,
     topProdutos: top.rows,
     ultimasVendas: ultimas.rows,
+    vendas7Dias: vendas7D.rows,
   };
 }

@@ -34,6 +34,7 @@ const VAZIO: Omit<ProdutoDTO, "id" | "stock_atual"> = {
   ativo: true,
   disponivel_online: false,
   descricao_publica: null,
+  isento_imposto: false,
 };
 
 export function ProdutosClient({
@@ -113,6 +114,7 @@ export function ProdutosClient({
       ativo: p.ativo,
       disponivel_online: p.disponivel_online,
       descricao_publica: p.descricao_publica ?? null,
+      isento_imposto: p.isento_imposto ?? false,
     });
     setErro("");
     setModal(true);
@@ -399,6 +401,16 @@ export function ProdutosClient({
               <Switch
                 checked={form.disponivel_online}
                 onChange={(v) => set("disponivel_online", v)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-zinc-200">Isento de Imposto</p>
+                <p className="text-xs text-zinc-500">Não aplicar IVA na venda deste produto</p>
+              </div>
+              <Switch
+                checked={form.isento_imposto}
+                onChange={(v) => set("isento_imposto", v)}
               />
             </div>
           </div>

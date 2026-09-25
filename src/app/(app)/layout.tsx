@@ -34,6 +34,12 @@ export default async function AppLayout({
     );
   }
 
+  const config = await pool.query(
+    `SELECT tempo_inatividade FROM loja WHERE id = $1`,
+    [sessao.lojaId]
+  );
+  const tempo_inatividade = config.rows[0]?.tempo_inatividade || 60;
+
   return (
     <AppShell
       sessao={{
@@ -42,6 +48,7 @@ export default async function AppLayout({
         lojaNome: sessao.lojaNome,
         tipoLoja: sessao.tipoLoja,
         moeda: sessao.moeda,
+        tempo_inatividade,
       }}
     >
       {children}
