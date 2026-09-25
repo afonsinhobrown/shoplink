@@ -14,8 +14,8 @@ export async function GET() {
       await Promise.all([
         pool.query(
           `SELECT COALESCE(SUM(total),0) AS total, COUNT(*) AS count
-           FROM venda WHERE loja_id=$1 AND status='concluida' AND data_venda >= $2`,
-          [lojaId, hoje]
+           FROM venda WHERE loja_id=$1 AND status='concluida' AND data_venda >= CURRENT_DATE`,
+          [lojaId]
         ),
         pool.query(
           `SELECT DATE_TRUNC('month', data_venda) AS mes, COALESCE(SUM(total),0) AS total
@@ -43,9 +43,9 @@ export async function GET() {
            FROM venda_item vi
            JOIN venda v ON v.id = vi.venda_id
            JOIN produto p ON p.id = vi.produto_id
-           WHERE v.loja_id=$1 AND v.status='concluida' AND v.data_venda >= $2
+           WHERE v.loja_id=$1 AND v.status='concluida' AND v.data_venda >= CURRENT_DATE
            GROUP BY p.nome ORDER BY total DESC LIMIT 5`,
-          [lojaId, hoje]
+          [lojaId]
         ),
         pool.query(
           `SELECT v.id, v.numero_recibo, v.total, v.status, v.origem, v.data_venda,
