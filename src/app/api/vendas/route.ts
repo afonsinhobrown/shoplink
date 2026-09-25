@@ -64,7 +64,7 @@ export async function POST(req: Request) {
     );
     if (catFinanceira.rows.length === 0) {
       catFinanceira = await client.query(
-        `INSERT INTO categoria_financeira (loja_id, nome, tipo, sistema) VALUES ($1, 'Vendas', 'receita', true) RETURNING id`,
+        `INSERT INTO categoria_financeira (loja_id, nome, tipo) VALUES ($1, 'Vendas', 'receita') RETURNING id`,
         [r.sessao.lojaId]
       );
     }
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
     );
     if (contasFin.rows.length === 0) {
       await client.query(
-        `INSERT INTO conta_financeira (loja_id, nome, tipo, saldo_inicial, padrao, sistema) VALUES ($1, 'Caixa Principal', 'numerario', 0, true, true)`,
+        `INSERT INTO conta_financeira (loja_id, nome, tipo, saldo_inicial) VALUES ($1, 'Caixa Principal', 'caixa', 0)`,
         [r.sessao.lojaId]
       );
       contasFin = await client.query(
@@ -199,7 +199,7 @@ export async function POST(req: Request) {
     for (const p of pagamentoList) {
       let contaDestino = null;
       if (p.metodo === 'dinheiro') {
-        contaDestino = caixaContaId || contasFin.rows.find((c) => c.tipo === 'numerario')?.id || contasFin.rows[0]?.id;
+        contaDestino = caixaContaId || contasFin.rows.find((c) => c.tipo === 'caixa')?.id || contasFin.rows[0]?.id;
       } else if (p.metodo === 'mpesa') {
         contaDestino = contasFin.rows.find((c) => c.tipo === 'mpesa')?.id || contasFin.rows[0]?.id;
       } else if (p.metodo === 'emola') {
