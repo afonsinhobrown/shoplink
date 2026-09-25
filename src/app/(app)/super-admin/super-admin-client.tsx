@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, ShieldAlert, CheckCircle2, XCircle, Store, Users, ShoppingBag } from "lucide-react";
-import { formatarData } from "@/lib/utils";
+import { formatarData } from "@/lib/format";
 
 interface LojaAdmin {
   loja_id: string;
