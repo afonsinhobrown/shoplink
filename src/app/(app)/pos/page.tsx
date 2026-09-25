@@ -21,6 +21,7 @@ export default async function PosPage() {
       controlaLote={config.controla_lote_validade ?? false}
       papel={sessao.papel}
       caixaAberto={caixaAberto}
+      impostoPadrao={Number(config.imposto_padrao) || 0}
       loja={{
         nome: config.nome ?? "ShopLink",
         nuit: config.nuit ?? "",

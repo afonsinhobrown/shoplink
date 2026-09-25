@@ -58,6 +58,7 @@ export function PosClient({
   permiteVendaFiado,
   papel,
   caixaAberto,
+  impostoPadrao,
   loja,
 }: {
   moeda: string;
@@ -66,6 +67,7 @@ export function PosClient({
   controlaLote: boolean;
   papel: string;
   caixaAberto: boolean;
+  impostoPadrao: number;
   loja: { nome: string; nuit: string; endereco: string; telefone: string };
 }) {
   const [produtos, setProdutos] = useState<ProdutoDTO[]>([]);
@@ -119,13 +121,22 @@ export function PosClient({
         await apiFetch("/api/vendas", {
           method: "POST",
           body: JSON.stringify({
-            itens: p.itens.map((i) => ({
-              produto_id: i.produto.id,
-              quantidade: i.quantidade,
-              preco_unitario: i.produto.preco_venda,
-            })),
+            itens: p.itens.map((i) => {
+              const sub = i.quantidade * i.produto.preco_venda;
+              const imposto_linha = i.produto.isento_imposto ? 0 : sub * (impostoPadrao / 100);
+              return {
+                produto_id: i.produto.id,
+                quantidade: i.quantidade,
+                preco_unitario: i.produto.preco_venda,
+                imposto_linha,
+              };
+            }),
             pagamentos: [{ metodo: p.metodo, valor: p.total }],
             cliente_id: p.cliente_id,
+            imposto_total: p.itens.reduce((acc, i) => {
+              if (i.produto.isento_imposto) return acc;
+              return acc + (i.quantidade * i.produto.preco_venda) * (impostoPadrao / 100);
+            }, 0),
           }),
         });
         atual = atual.filter((x) => x !== p);
@@ -187,7 +198,12 @@ export function PosClient({
     (s, i) => s + i.quantidade * i.produto.preco_venda,
     0
   );
-  const total = Math.max(subtotal - Number(desconto || 0), 0);
+  const impostoTotal = carrinho.reduce((acc, i) => {
+    if (i.produto.isento_imposto) return acc;
+    const sub = i.quantidade * i.produto.preco_venda;
+    return acc + sub * (impostoPadrao / 100);
+  }, 0);
+  const total = Math.max(subtotal + impostoTotal - Number(desconto || 0), 0);
   const troco = Math.max(Number(recebido || 0) - total, 0);
 
   function adicionar(p: ProdutoDTO) {
@@ -246,14 +262,20 @@ export function PosClient({
     setFinalizando(true);
 
     const payload = {
-      itens: carrinho.map((i) => ({
-        produto_id: i.produto.id,
-        quantidade: i.quantidade,
-        preco_unitario: i.produto.preco_venda,
-      })),
+      itens: carrinho.map((i) => {
+        const sub = i.quantidade * i.produto.preco_venda;
+        const imposto_linha = i.produto.isento_imposto ? 0 : sub * (impostoPadrao / 100);
+        return {
+          produto_id: i.produto.id,
+          quantidade: i.quantidade,
+          preco_unitario: i.produto.preco_venda,
+          imposto_linha,
+        };
+      }),
       pagamentos: [{ metodo, valor: total }],
       cliente_id: metodo === "fiado" ? clienteId : undefined,
       desconto_total: Number(desconto || 0),
+      imposto_total: impostoTotal,
     };
 
     async function executar() {
@@ -468,6 +490,12 @@ export function PosClient({
                 <span>Subtotal</span>
                 <span>{formatarMoeda(subtotal, moeda)}</span>
               </div>
+              {impostoTotal > 0 && (
+                <div className="mt-1 flex items-center justify-between text-sm text-zinc-400">
+                  <span>IVA ({impostoPadrao}%)</span>
+                  <span>{formatarMoeda(impostoTotal, moeda)}</span>
+                </div>
+              )}
               <div className="mt-2 flex items-center justify-between gap-3">
                 <span className="text-sm text-zinc-400">Desconto</span>
                 <Input
@@ -673,8 +701,14 @@ export function PosClient({
               </table>
             </div>
 
+            {impostoTotal > 0 && (
+              <div className="mt-1 w-full text-right text-xs text-zinc-400">
+                <p>IVA ({impostoPadrao}%): {formatarMoeda(impostoTotal, moeda)}</p>
+              </div>
+            )}
+
             {metodo === "dinheiro" && (
-              <div className="w-full text-right text-xs text-zinc-400 mt-2">
+              <div className="w-full text-right text-xs text-zinc-400 mt-1">
                 <p>Dinheiro: {formatarMoeda(recibo.recebido || 0, moeda)}</p>
                 <p>Troco: {formatarMoeda(recibo.troco || 0, moeda)}</p>
               </div>

@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   const r = await apiPapel("dono", "gestor", "caixa");
   if (r.response) return r.response;
   const body = await req.json();
-  const { itens, pagamentos, cliente_id, desconto_total = 0 } = body ?? {};
+  const { itens, pagamentos, cliente_id, desconto_total = 0, imposto_total = 0 } = body ?? {};
 
   if (!Array.isArray(itens) || itens.length === 0) {
     return NextResponse.json({ error: "A venda não tem itens" }, { status: 400 });
@@ -107,7 +107,7 @@ export async function POST(req: Request) {
         Number(item.desconto_linha ?? 0);
     }
 
-    const total = Number((subtotal - Number(desconto_total)).toFixed(2));
+    const total = Number((subtotal + Number(imposto_total) - Number(desconto_total)).toFixed(2));
     if (total < 0) {
       throw new ApiError("O total da venda não pode ser negativo");
     }
@@ -161,13 +161,13 @@ export async function POST(req: Request) {
 
     const venda = await client.query(
       `INSERT INTO venda (loja_id, caixa_sessao_id, utilizador_id, cliente_id,
-                          numero_recibo, subtotal, desconto_total, total, status,
+                          numero_recibo, subtotal, desconto_total, imposto_total, total, status,
                           origem, sincronizado_em)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'online', now())
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'online', now())
        RETURNING id, numero_recibo, total, status`,
       [
         r.sessao.lojaId, caixaSessaoId, r.sessao.uid, cliente_id ?? null,
-        recibo, Number(subtotal.toFixed(2)), Number(desconto_total) || 0, total,
+        recibo, Number(subtotal.toFixed(2)), Number(desconto_total) || 0, Number(imposto_total) || 0, total,
         status,
       ]
     );
@@ -178,9 +178,9 @@ export async function POST(req: Request) {
       const subtotalLinha =
         Number(item.quantidade) * Number(item.preco_unitario) - descontoLinha;
       await client.query(
-        `INSERT INTO venda_item (venda_id, produto_id, quantidade, preco_unitario, desconto_linha, subtotal_linha)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [vendaId, item.produto_id, Number(item.quantidade), Number(item.preco_unitario), descontoLinha, subtotalLinha]
+        `INSERT INTO venda_item (venda_id, produto_id, quantidade, preco_unitario, desconto_linha, imposto_linha, subtotal_linha)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [vendaId, item.produto_id, Number(item.quantidade), Number(item.preco_unitario), descontoLinha, Number(item.imposto_linha || 0), subtotalLinha]
       );
       const prod = prodMap.get(item.produto_id);
       if (prod?.controla_stock) {
