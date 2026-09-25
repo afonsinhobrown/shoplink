@@ -115,7 +115,7 @@ export function SuperAdminClient({ lojas: initialLojas }: { lojas: LojaAdmin[] }
                       {loja.total_vendas}
                     </div>
                   </td>
-                  <td className="p-4 text-center text-zinc-400">
+                  <td className="p-4 text-center text-zinc-400" suppressHydrationWarning>
                     {formatarData(loja.loja_data_criacao)}
                   </td>
                   <td className="p-4 text-center">
