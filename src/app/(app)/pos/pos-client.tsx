@@ -386,8 +386,8 @@ export function PosClient({
                 return (
                   <button
                     key={p.id}
-                    onClick={() => !esgotado && adicionar(p)}
-                    disabled={esgotado}
+                    onClick={() => !esgotado && caixaAberto && adicionar(p)}
+                    disabled={esgotado || !caixaAberto}
                     className="group relative flex flex-col gap-2 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 text-left transition-all hover:border-emerald-500/50 hover:bg-zinc-900 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -405,7 +405,7 @@ export function PosClient({
                           {formatarMoeda(p.preco_venda, moeda)}
                         </p>
                         <p className="text-[11px] text-zinc-500">
-                          {p.controla_stock ? `${p.stock_atual} ${p.unidade_medida}` : "Sem stock"}
+                          {p.controla_stock ? `${Number(p.stock_atual)} ${p.unidade_medida}` : "Sem stock"}
                         </p>
                       </div>
                       <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500 text-white opacity-0 shadow-lg shadow-emerald-500/30 transition-opacity group-hover:opacity-100">

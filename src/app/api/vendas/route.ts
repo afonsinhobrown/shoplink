@@ -47,12 +47,16 @@ export async function POST(req: Request) {
     await client.query("BEGIN");
 
     const caixa = await client.query(
-      `SELECT id, conta_financeira_id FROM caixa_sessao WHERE loja_id = $1 AND status = 'aberta'
+      `SELECT id, conta_financeira_id FROM caixa_sessao WHERE loja_id = $1 AND utilizador_id = $2 AND status = 'aberta'
        ORDER BY data_abertura DESC LIMIT 1`,
-      [r.sessao.lojaId]
+      [r.sessao.lojaId, r.sessao.uid]
     );
     const caixaSessaoId = caixa.rows[0]?.id ?? null;
     const caixaContaId = caixa.rows[0]?.conta_financeira_id ?? null;
+
+    if (!caixaSessaoId) {
+      throw new ApiError("Tem de abrir o Caixa primeiro para poder faturar.");
+    }
 
     let catFinanceira = await client.query(
       `SELECT id FROM categoria_financeira WHERE loja_id = $1 AND nome = 'Vendas' LIMIT 1`,

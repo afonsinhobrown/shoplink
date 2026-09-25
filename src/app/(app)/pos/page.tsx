@@ -8,8 +8,8 @@ export default async function PosPage() {
   const config = (await getLojaConfig(sessao)) ?? {};
 
   const caixaRes = await pool.query(
-    `SELECT id FROM caixa_sessao WHERE loja_id = $1 AND status = 'aberta' LIMIT 1`,
-    [sessao.lojaId]
+    `SELECT id FROM caixa_sessao WHERE loja_id = $1 AND utilizador_id = $2 AND status = 'aberta' LIMIT 1`,
+    [sessao.lojaId, sessao.uid]
   );
   const caixaAberto = caixaRes.rows.length > 0;
 
