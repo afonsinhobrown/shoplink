@@ -26,7 +26,9 @@ export default async function AppLayout({
       lic.rows[0].data_fim
     );
 
-  if (semLicenca) {
+  const isSuperAdmin = sessao.email === "afonso@example.com" || sessao.email === "nachingweya@gmail.com" || sessao.email === "afonsinhobrown@gmail.com" || (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL && sessao.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL);
+
+  if (semLicenca && !isSuperAdmin) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-4 text-zinc-100">
         <LicencaPanel papel={sessao.papel} />
