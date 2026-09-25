@@ -76,7 +76,7 @@ export async function POST(req: Request) {
     );
     if (contasFin.rows.length === 0) {
       await client.query(
-        `INSERT INTO conta_financeira (loja_id, nome, tipo, saldo, padrao, sistema) VALUES ($1, 'Caixa Principal', 'numerario', 0, true, true)`,
+        `INSERT INTO conta_financeira (loja_id, nome, tipo, saldo_inicial, padrao, sistema) VALUES ($1, 'Caixa Principal', 'numerario', 0, true, true)`,
         [r.sessao.lojaId]
       );
       contasFin = await client.query(
