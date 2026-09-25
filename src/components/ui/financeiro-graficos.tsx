@@ -41,7 +41,7 @@ export function GraficoDRE({
           <Tooltip
             cursor={{ fill: "#27272a", opacity: 0.4 }}
             contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px" }}
-            formatter={(value: number) => [formatarMoeda(value, moeda), ""]}
+            formatter={(value: any) => [formatarMoeda(Number(value), moeda), ""]}
           />
           <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
           <Bar name="Receitas" dataKey="receita" fill="#34d399" radius={[4, 4, 0, 0]} />

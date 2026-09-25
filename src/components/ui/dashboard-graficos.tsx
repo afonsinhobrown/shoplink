@@ -46,7 +46,7 @@ export function GraficoVendas({
           <Tooltip
             cursor={{ stroke: "#27272a", strokeWidth: 1, strokeDasharray: "3 3" }}
             contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px" }}
-            formatter={(value: number) => [formatarMoeda(value, moeda), "Vendas"]}
+            formatter={(value: any) => [formatarMoeda(Number(value), moeda), "Vendas"]}
             labelStyle={{ color: "#a1a1aa", marginBottom: "4px" }}
           />
           <Area

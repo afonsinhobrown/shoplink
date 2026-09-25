@@ -409,7 +409,7 @@ export function ProdutosClient({
                 <p className="text-xs text-zinc-500">Não aplicar IVA na venda deste produto</p>
               </div>
               <Switch
-                checked={form.isento_imposto}
+                checked={form.isento_imposto ?? false}
                 onChange={(v) => set("isento_imposto", v)}
               />
             </div>
