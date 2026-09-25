@@ -91,7 +91,7 @@ export function AppShell({
 
   const itens = useMemo(() => {
     const defaultItens = NAV.filter((i) => i.roles.includes(sessao.papel));
-    if (sessao.email === "afonsinhobrown@gmail.com" || sessao.email === "afonso@example.com" || (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL && sessao.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL)) {
+    if (sessao.email === "afonsinhobrown@gmail.com" || sessao.email === "nachingweya@gmail.com" || sessao.email === "afonso@example.com" || (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL && sessao.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL)) {
       defaultItens.push({
         href: "/super-admin",
         label: "Super Admin",

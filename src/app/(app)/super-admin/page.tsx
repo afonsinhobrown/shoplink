@@ -8,7 +8,7 @@ export default async function SuperAdminPage() {
   
   // Apenas o dono principal ou e-mail especifico pode aceder
   // Podes ajustar esta lógica de e-mail ou adicionar uma flag na base de dados
-  const isSuperAdmin = sessao.email === "afonso@example.com" || process.env.SUPER_ADMIN_EMAIL === sessao.email;
+  const isSuperAdmin = sessao.email === "afonso@example.com" || sessao.email === "nachingweya@gmail.com" || sessao.email === "afonsinhobrown@gmail.com" || process.env.SUPER_ADMIN_EMAIL === sessao.email;
   
   // Como fallback temporário, podemos permitir se o utilizador for 'dono', mas o ideal é ter uma flag específica
   if (sessao.papel !== 'dono') {

@@ -7,7 +7,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ lojaId:
     const sessao = await requireSessao();
     
     // Apenas o dono principal ou e-mail especifico pode aceder
-    const isSuperAdmin = sessao.email === "afonso@example.com" || process.env.SUPER_ADMIN_EMAIL === sessao.email;
+    const isSuperAdmin = sessao.email === "afonso@example.com" || sessao.email === "nachingweya@gmail.com" || sessao.email === "afonsinhobrown@gmail.com" || process.env.SUPER_ADMIN_EMAIL === sessao.email;
     
     if (sessao.papel !== 'dono') {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
