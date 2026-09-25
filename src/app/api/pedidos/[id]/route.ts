@@ -141,11 +141,44 @@ export async function POST(
       }
     }
 
-    await client.query(
-      `INSERT INTO venda_pagamento (venda_id, metodo, valor)
-       VALUES ($1, $2, $3)`,
-      [vendaId, METODO_VENDA[p.metodo_pagamento] ?? "dinheiro", Number(p.total)]
+    const catFinanceira = await client.query(
+      `SELECT id FROM categoria_financeira WHERE loja_id = $1 AND nome = 'Vendas' LIMIT 1`,
+      [r.sessao.lojaId]
     );
+    const categoriaVendasId = catFinanceira.rows[0]?.id ?? null;
+
+    const contasFin = await client.query(
+      `SELECT id, tipo FROM conta_financeira WHERE loja_id = $1 AND ativo = true`,
+      [r.sessao.lojaId]
+    );
+    
+    const met = METODO_VENDA[p.metodo_pagamento] ?? "dinheiro";
+    let contaDestino = null;
+    if (met === 'mpesa') {
+      contaDestino = contasFin.rows.find((c) => c.tipo === 'mpesa')?.id ?? null;
+    } else if (met === 'emola') {
+      contaDestino = contasFin.rows.find((c) => c.tipo === 'emola')?.id ?? null;
+    } else if (['cartao', 'transferencia', 'cheque'].includes(met)) {
+      contaDestino = contasFin.rows.find((c) => c.tipo === 'banco')?.id ?? null;
+    } else {
+      // Fallback para 'dinheiro' online
+      contaDestino = contasFin.rows.find((c) => c.tipo === 'caixa')?.id ?? null;
+    }
+
+    await client.query(
+      `INSERT INTO venda_pagamento (venda_id, metodo, valor, conta_financeira_id)
+       VALUES ($1, $2, $3, $4)`,
+      [vendaId, met, Number(p.total), contaDestino]
+    );
+
+    if (categoriaVendasId && contaDestino) {
+      await client.query(
+         `INSERT INTO lancamento_financeiro 
+          (loja_id, conta_financeira_id, categoria_financeira_id, tipo, valor, descricao, origem_tipo, origem_id, status, utilizador_id)
+          VALUES ($1, $2, $3, 'receita', $4, $5, 'venda', $6, 'confirmado', $7)`,
+         [r.sessao.lojaId, contaDestino, categoriaVendasId, Number(p.total), `Venda NetShop ${recibo} - ${met}`, vendaId, r.sessao.uid]
+      );
+    }
 
     await client.query(
       `DELETE FROM stock_reserva WHERE pedido_online_id = $1`,
