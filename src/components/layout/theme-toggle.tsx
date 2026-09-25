@@ -3,11 +3,14 @@
 import * as React from "react";
 
 export function ThemeToggle() {
-  const [dark, setDark] = React.useState<boolean>(() => {
-    if (typeof window === "undefined") return true;
+  const [dark, setDark] = React.useState<boolean>(true);
+
+  React.useEffect(() => {
     const stored = localStorage.getItem("theme");
-    return stored ? stored === "dark" : true;
-  });
+    if (stored) {
+      setDark(stored === "dark");
+    }
+  }, []);
 
   React.useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
