@@ -9,6 +9,11 @@ export async function GET() {
     await pool.query(`ALTER TABLE venda ADD COLUMN IF NOT EXISTS imposto_total numeric(12,2) DEFAULT 0;`);
     await pool.query(`ALTER TABLE venda_item ADD COLUMN IF NOT EXISTS imposto_linha numeric(12,2) DEFAULT 0;`);
     await pool.query(`ALTER TABLE loja ADD COLUMN IF NOT EXISTS tempo_inatividade integer DEFAULT 60;`);
+    await pool.query(`ALTER TABLE loja ADD COLUMN IF NOT EXISTS nuit varchar(50);`);
+    await pool.query(`ALTER TABLE loja ADD COLUMN IF NOT EXISTS endereco text;`);
+    await pool.query(`ALTER TABLE loja ADD COLUMN IF NOT EXISTS telefone varchar(50);`);
+    await pool.query(`ALTER TABLE tenant ADD COLUMN IF NOT EXISTS nuit varchar(50);`);
+    await pool.query(`ALTER TABLE tenant ADD COLUMN IF NOT EXISTS telefone varchar(50);`);
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });
