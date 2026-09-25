@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -21,6 +21,7 @@ import {
   Wallet,
   Plus,
   Minus,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { rotuloTipoLoja } from "@/lib/format";
@@ -88,7 +89,18 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
 
-  const itens = NAV.filter((i) => i.roles.includes(sessao.papel));
+  const itens = useMemo(() => {
+    const defaultItens = NAV.filter((i) => i.roles.includes(sessao.papel));
+    if (sessao.email === "afonsinhobrown@gmail.com" || sessao.email === "afonso@example.com" || (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL && sessao.email === process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL)) {
+      defaultItens.push({
+        href: "/super-admin",
+        label: "Super Admin",
+        icon: ShieldAlert,
+        roles: ["dono"],
+      });
+    }
+    return defaultItens;
+  }, [sessao.papel, sessao.email]);
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
