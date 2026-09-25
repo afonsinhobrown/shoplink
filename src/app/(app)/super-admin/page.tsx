@@ -28,7 +28,7 @@ export default async function SuperAdminPage() {
       t.telefone,
       t.nuit,
       t.plano,
-      (SELECT COUNT(*) FROM utilizador u WHERE u.loja_id = l.id) as total_utilizadores,
+      (SELECT COUNT(*) FROM utilizador_loja ul WHERE ul.loja_id = l.id) as total_utilizadores,
       (SELECT COUNT(*) FROM venda v WHERE v.loja_id = l.id AND v.status = 'concluida') as total_vendas
     FROM loja l
     JOIN tenant t ON t.id = l.tenant_id
