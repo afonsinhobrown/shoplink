@@ -14,6 +14,20 @@ export async function GET() {
     await pool.query(`ALTER TABLE loja ADD COLUMN IF NOT EXISTS telefone varchar(50);`);
     await pool.query(`ALTER TABLE tenant ADD COLUMN IF NOT EXISTS nuit varchar(50);`);
     await pool.query(`ALTER TABLE tenant ADD COLUMN IF NOT EXISTS telefone varchar(50);`);
+    
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS auditoria (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        loja_id uuid NOT NULL REFERENCES loja(id),
+        utilizador_id uuid REFERENCES utilizador(id),
+        acao text NOT NULL,
+        entidade text NOT NULL,
+        entidade_id text,
+        detalhes jsonb,
+        data_criacao timestamptz DEFAULT now()
+      );
+    `);
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { apiPapel } from "@/lib/api-auth";
 import bcrypt from "bcryptjs";
+import { registarAuditoria } from "@/lib/auditoria";
 
 // GET /api/utilizadores
 export async function GET() {
@@ -60,6 +61,16 @@ export async function POST(req: Request) {
       );
 
       await client.query("COMMIT");
+
+      registarAuditoria({
+        lojaId: r.sessao.lojaId,
+        utilizadorId: r.sessao.uid,
+        acao: "Criar Utilizador",
+        entidade: "UTILIZADOR",
+        entidadeId: userId,
+        detalhes: { nome, email, papel }
+      }).catch(() => {});
+
       return NextResponse.json({ success: true, id: userId }, { status: 201 });
     } catch (e) {
       await client.query("ROLLBACK");

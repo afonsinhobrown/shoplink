@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { apiPapel } from "@/lib/api-auth";
 import bcrypt from "bcryptjs";
+import { registarAuditoria } from "@/lib/auditoria";
 
 // PUT /api/utilizadores/[id]
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -44,6 +45,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       }
 
       await client.query("COMMIT");
+
+      registarAuditoria({
+        lojaId: r.sessao.lojaId,
+        utilizadorId: r.sessao.uid,
+        acao: "Editar Utilizador",
+        entidade: "UTILIZADOR",
+        entidadeId: id,
+        detalhes: { nome, email, papel }
+      }).catch(() => {});
+
       return NextResponse.json({ success: true });
     } catch (e: any) {
       await client.query("ROLLBACK");
@@ -84,6 +95,15 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       }
 
       await client.query("COMMIT");
+
+      registarAuditoria({
+        lojaId: r.sessao.lojaId,
+        utilizadorId: r.sessao.uid,
+        acao: "Apagar Utilizador",
+        entidade: "UTILIZADOR",
+        entidadeId: id
+      }).catch(() => {});
+
       return NextResponse.json({ success: true });
     } catch (e) {
       await client.query("ROLLBACK");

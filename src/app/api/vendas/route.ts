@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { apiPapel } from "@/lib/api-auth";
+import { registarAuditoria } from "@/lib/auditoria";
 
 const PAD = (n: number) => String(n).padStart(4, "0");
 
@@ -232,6 +233,16 @@ export async function POST(req: Request) {
     }
 
     await client.query("COMMIT");
+
+    registarAuditoria({
+      lojaId: r.sessao.lojaId,
+      utilizadorId: r.sessao.uid,
+      acao: "Nova Venda",
+      entidade: "VENDA",
+      entidadeId: vendaId,
+      detalhes: { total, itens_qtd: itens.length, recibo }
+    }).catch(() => {});
+
     return NextResponse.json(venda.rows[0], { status: 201 });
   } catch (e) {
     await client.query("ROLLBACK").catch(() => {});
