@@ -37,7 +37,7 @@ interface CaixaData {
 export function CaixaClient({ moeda, papel }: { moeda: string; papel: string }) {
   const [data, setData] = useState<CaixaData | null>(null);
   const [carregando, setCarregando] = useState(true);
-  const [modal, setModal] = useState<"" | "abrir" | "movimento" | "fechar">("");
+  const [modal, setModal] = useState<"" | "abrir" | "movimento" | "fechar" | "fecho_resumo">("");
   const [valor, setValor] = useState("");
   const [obs, setObs] = useState("");
   const [erro, setErro] = useState("");
@@ -70,8 +70,12 @@ export function CaixaClient({ moeda, papel }: { moeda: string; papel: string }) 
         method: "POST",
         body: JSON.stringify(body),
       });
-      if (tipo === "fechar") setResumoFecho(res);
-      setModal("");
+      if (tipo === "fechar") {
+        setResumoFecho(res);
+        setModal("fecho_resumo");
+      } else {
+        setModal("");
+      }
       setValor("");
       setObs("");
       carregar();
@@ -390,6 +394,22 @@ export function CaixaClient({ moeda, papel }: { moeda: string; papel: string }) 
               placeholder="0.00"
             />
           </Field>
+        </div>
+      </Modal>
+
+      {/* Modal resumo fecho */}
+      <Modal open={modal === "fecho_resumo"} onClose={() => setModal("")} title="Resumo do Fecho">
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-center">
+            <p className="mb-3 text-lg font-bold text-emerald-400">Caixa fechado com sucesso!</p>
+            <div className="flex flex-col gap-1 text-sm text-zinc-300">
+              <p>Valor esperado no sistema: <span className="font-bold text-zinc-100">{formatarMoeda(resumoFecho?.esperado || 0, moeda)}</span></p>
+              <p>Quebra / Sobra: <span className={`font-bold ${(resumoFecho?.diferenca || 0) < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>{formatarMoeda(resumoFecho?.diferenca || 0, moeda)}</span></p>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => setModal("")}>Concluir</Button>
+          </div>
         </div>
       </Modal>
     </div>

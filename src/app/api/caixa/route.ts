@@ -28,9 +28,9 @@ export async function GET() {
       [r.sessao.lojaId]
     ),
     pool.query(
-      `SELECT id FROM caixa_sessao WHERE loja_id = $1 AND status = 'aberta'
+      `SELECT id FROM caixa_sessao WHERE loja_id = $1 AND utilizador_id = $2 AND status = 'aberta'
        ORDER BY data_abertura DESC LIMIT 1`,
-      [r.sessao.lojaId]
+      [r.sessao.lojaId, r.sessao.uid]
     ),
   ]);
 
@@ -61,8 +61,8 @@ export async function POST(req: Request) {
 
   const aberta = await pool.query(
     `SELECT id, valor_abertura FROM caixa_sessao
-     WHERE loja_id = $1 AND status = 'aberta' ORDER BY data_abertura DESC LIMIT 1`,
-    [r.sessao.lojaId]
+     WHERE loja_id = $1 AND utilizador_id = $2 AND status = 'aberta' ORDER BY data_abertura DESC LIMIT 1`,
+    [r.sessao.lojaId, r.sessao.uid]
   );
 
   if (acao === "abrir") {
