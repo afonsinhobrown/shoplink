@@ -131,7 +131,7 @@ export function SuperAdminClient({ lojas: initialLojas }: { lojas: LojaAdmin[] }
                   </td>
                   <td className="p-4 text-right">
                     <Button
-                      variant={loja.loja_ativa ? "destructive" : "default"}
+                      variant={loja.loja_ativa ? "danger" : "primary"}
                       size="sm"
                       disabled={loading === loja.loja_id}
                       onClick={() => toggleStatus(loja.loja_id, loja.loja_ativa)}

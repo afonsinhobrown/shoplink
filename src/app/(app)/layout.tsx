@@ -49,6 +49,7 @@ export default async function AppLayout({
         tipoLoja: sessao.tipoLoja,
         moeda: sessao.moeda,
         tempo_inatividade,
+        email: sessao.email,
       }}
     >
       {children}

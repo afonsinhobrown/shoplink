@@ -84,6 +84,7 @@ export function AppShell({
     tipoLoja: string;
     moeda: string;
     tempo_inatividade: number;
+    email: string;
   };
 }) {
   const pathname = usePathname();
