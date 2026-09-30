@@ -1,16 +1,22 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
   Banknote,
+  Bot,
   Boxes,
   Check,
   ClipboardList,
+  Clock,
+  MessageCircle,
   ReceiptText,
   ShieldCheck,
   ShoppingCart,
   Smartphone,
   Store,
+  Tag,
   Users,
+  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSessao } from "@/lib/auth";
@@ -63,6 +69,39 @@ const INCLUIDO = [
   "Colaboradores com níveis de acesso",
 ];
 
+const BOT_WHATSAPP =
+  "https://wa.me/258861390985?text=" +
+  encodeURIComponent(
+    "Olá! Quero saber mais sobre a configuração de bot para WhatsApp."
+  );
+
+const VANTAGENS_BOT = [
+  {
+    icon: MessageCircle,
+    titulo: "Atende antes de você",
+    texto:
+      "O bot responde a preço, disponibilidade e localização a qualquer hora, e só chama você quando precisa.",
+  },
+  {
+    icon: Wrench,
+    titulo: "Feito à medida da sua empresa",
+    texto:
+      "Configuramos o menu, as respostas e o tom de voz com o que você realmente vende.",
+  },
+  {
+    icon: Tag,
+    titulo: "Preços no próprio menu",
+    texto:
+      "O cliente vê os serviços e os preços no bot, sem precisar de falar com ninguém para saber quanto custa.",
+  },
+  {
+    icon: Clock,
+    titulo: "Sem mensalidade",
+    texto:
+      "Paga-se pela configuração. Sem mensalidades, sem surpresas no fim do mês.",
+  },
+];
+
 export default async function LandingPage() {
   const sessao = await getSessao();
 
@@ -90,6 +129,9 @@ export default async function LandingPage() {
             </a>
             <a href="#loja-online" className="hover:text-zinc-100">
               Loja online
+            </a>
+            <a href="#bot-whatsapp" className="hover:text-zinc-100">
+              Bot WhatsApp
             </a>
             <a href="#preco" className="hover:text-zinc-100">
               Preço
@@ -272,6 +314,71 @@ export default async function LandingPage() {
             </div>
             <div className="mt-4 rounded-xl bg-emerald-500 px-4 py-3 text-center text-sm font-semibold text-white">
               Finalizar compra
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Bot de WhatsApp - servico da Tecnoincubadora */}
+      <section id="bot-whatsapp" className="border-b border-zinc-800/80 bg-zinc-900/30">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2">
+          <div className="relative order-2 lg:order-1">
+            <div className="pointer-events-none absolute inset-0">
+              <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
+            </div>
+            <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-3">
+              <Image
+                src="/bot.jpeg"
+                alt="Bot de WhatsApp configurado pela Tecnoincubadora a responder um cliente"
+                width={1536}
+                height={1024}
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="h-auto w-full rounded-2xl object-cover"
+              />
+            </div>
+          </div>
+          <div className="order-1 lg:order-2">
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+              <Bot className="h-3.5 w-3.5" />
+              Tecnoincubadora · serviço adicional
+            </span>
+            <h2 className="mt-5 text-3xl font-bold tracking-tight text-zinc-50">
+              Também configuramos o seu bot de WhatsApp
+            </h2>
+            <p className="mt-3 text-zinc-400">
+              Além do ShopLink, configuramos bots de WhatsApp para pequenos e
+              médios negócios. O seu cliente manda a mensagem a qualquer hora,
+              vê o menu com os seus serviços e preços, e resolve tudo sem
+              precisar de alguém ao lado.
+            </p>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              {VANTAGENS_BOT.map((v) => (
+                <div
+                  key={v.titulo}
+                  className="rounded-2xl border border-zinc-800 bg-zinc-950/50 p-4"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                    <v.icon className="h-4 w-4" />
+                  </div>
+                  <h3 className="mt-3 text-sm font-semibold text-zinc-100">
+                    {v.titulo}
+                  </h3>
+                  <p className="mt-1 text-sm leading-relaxed text-zinc-400">
+                    {v.texto}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <a href={BOT_WHATSAPP} target="_blank" rel="noopener noreferrer">
+                <Button size="lg">
+                  <MessageCircle className="h-4 w-4" />
+                  Falar no WhatsApp
+                </Button>
+              </a>
+              <p className="text-xs text-zinc-500">
+                +258 861 390 985 · orçamento sem compromisso
+              </p>
             </div>
           </div>
         </div>
