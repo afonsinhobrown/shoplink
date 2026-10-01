@@ -1,15 +1,83 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { apiPapel } from "@/lib/api-auth";
+import { appBaseUrl } from "@/lib/app-url";
 import {
   buildLicencaReference,
   aplicarPagamentoLicenca,
   garantirLicenca,
 } from "@/lib/licenca";
-import { createPaySuiteCharge } from "@/lib/paysuite";
+import {
+  createPaySuiteCharge,
+  classificarEstado,
+  getPaySuiteCharge,
+} from "@/lib/paysuite";
+
+/**
+ * Reconcilia o pagamento de licença mais recente que ainda esteja pendente,
+ * consultando a PaySuite. É o fallback para quando o webhook não chega.
+ * Devolve o estado observado, sem alterar a licença.
+ */
+async function reconciliarPendente(lojaId: string): Promise<{
+  status: "pago" | "falhou" | "pendente" | null;
+  recibo?: string;
+}> {
+  const pag = await pool.query(
+    `SELECT id, licenca_id, cobranca_id FROM licenca_pagamento
+     WHERE loja_id = $1 AND status = 'pendente'
+     ORDER BY data_criacao DESC LIMIT 1`,
+    [lojaId]
+  );
+  if (pag.rows.length === 0) return { status: null };
+
+  const { id: pagamentoId, licenca_id: licencaId, cobranca_id: cobrancaId } = pag.rows[0];
+  const check = await getPaySuiteCharge(cobrancaId);
+  if (!check.paid && !check.failed) return { status: "pendente" };
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    if (check.paid) {
+      const periodo = await aplicarPagamentoLicenca(client, licencaId, pagamentoId);
+      await client.query("COMMIT");
+      return {
+        status: "pago",
+        recibo: `Período: ${pt(periodo.períodoInicio)} → ${pt(periodo.períodoFim)}`,
+      };
+    }
+    await client.query(
+      `UPDATE licenca_pagamento
+       SET status = 'falhou', observacao = 'Recusado pela PaySuite'
+       WHERE id = $1 AND status = 'pendente'`,
+      [pagamentoId]
+    );
+    await client.query("COMMIT");
+    return { status: "falhou" };
+  } catch (e) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+// GET /api/licenca/pagar -> reconcilia o pagamento pendente (fallback do webhook)
+export async function GET() {
+  try {
+    const r = await apiPapel("dono");
+    if (r.response) return r.response;
+
+    const estado = await reconciliarPendente(r.sessao.lojaId);
+    return NextResponse.json({ ok: true, ...estado });
+  } catch (e) {
+    console.error("licenca/pagar GET erro:", e);
+    return NextResponse.json({ error: "Falha ao verificar o pagamento." }, { status: 500 });
+  }
+}
 
 // POST /api/licenca/pagar
-// Licença mensal (2.500,00 MZN) paga via PaySuite — o cliente escolhe o método no checkout
+// Licença mensal (2.500,00 MZN) paga via PaySuite — sem `method`, o cliente
+// escolhe M-Pesa, e-Mola ou Cartão no checkout hospedado da PaySuite.
 export async function POST(req: Request) {
   try {
     const r = await apiPapel("dono");
@@ -29,27 +97,28 @@ export async function POST(req: Request) {
     const valor: number = Number(lic.rows[0].valor_mensal) || 2500;
     const reference = buildLicencaReference();
 
+    // "paysuite" marca que o método ainda não é conhecido; o webhook substitui
+    // pelo método real (mpesa | emola | credit_card) assim que o pagamento confirmar.
     const pag = await pool.query(
       `INSERT INTO licenca_pagamento (licenca_id, loja_id, metodo, valor, referencia_pagamento, status)
-       VALUES ($1, $2, $3, $4, $5, 'pendente')
+       VALUES ($1, $2, 'paysuite', $3, $4, 'pendente')
        RETURNING id`,
-      [licencaId, r.sessao.lojaId, "card", valor, reference]
+      [licencaId, r.sessao.lojaId, valor, reference]
     );
     const pagamentoId = pag.rows[0].id;
 
-    const host = req.headers.get("host") || "shoplink-iota.vercel.app";
-    const proto = host.includes("localhost") ? "http" : "https";
-    const base = (process.env.APP_URL || `${proto}://${host}`).replace(/\/$/, "");
+    const base = appBaseUrl(req);
     const returnUrl = `${base}/licenca?recibo=1`;
+    const webhookUrl = `${base}/api/webhooks/paysuite`;
 
     let charge;
     try {
       charge = await createPaySuiteCharge({
         amountMZN: valor,
         reference,
-        description: `Licença ShopLink - ${reference}`,
         returnUrl,
-        // sem `method` → cliente escolhe no checkout da PaySuite (M-Pesa, e-Mola, Cartão)
+        webhookUrl,
+        description: `Licença ShopLink - ${reference}`,
       });
     } catch (chargeErr) {
       const motivo = chargeErr instanceof Error ? chargeErr.message : "erro ao contactar a PaySuite";
@@ -70,9 +139,9 @@ export async function POST(req: Request) {
       [charge.id, charge.checkoutUrl ?? null, `PaySuite ${charge.status}`.slice(0, 250), pagamentoId]
     );
 
-    const st = String(charge.status).toLowerCase();
+    const { paid, failed } = classificarEstado(charge.status);
 
-    if (st === "paid" || st === "succeeded") {
+    if (paid) {
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
@@ -85,6 +154,7 @@ export async function POST(req: Request) {
         });
       } catch (e) {
         await client.query("ROLLBACK").catch(() => {});
+        console.error("licenca/pagar: pagamento aprovado mas renovação falhou:", e);
         return NextResponse.json(
           { error: "Pagamento aprovado mas a renovação falhou. Contacte-nos." },
           { status: 500 }
@@ -94,18 +164,15 @@ export async function POST(req: Request) {
       }
     }
 
-    if (st === "failed") {
-      await pool.query(
-        `UPDATE licenca_pagamento SET status = 'falhou' WHERE id = $1`,
-        [pagamentoId]
-      );
+    if (failed) {
+      await pool.query(`UPDATE licenca_pagamento SET status = 'falhou' WHERE id = $1`, [pagamentoId]);
       return NextResponse.json(
         { error: "A PaySuite recusou o pagamento. Tente novamente." },
         { status: 502 }
       );
     }
 
-    // pendente → redirecionar para o checkout da PaySuite
+    // pendente -> redirecionar para o checkout hospedado da PaySuite
     return NextResponse.json({
       ok: true,
       status: "pendente",

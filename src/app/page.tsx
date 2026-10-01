@@ -64,7 +64,7 @@ const INCLUIDO = [
   "PDV ilimitado para a sua loja",
   "Gestão de stock, vendas e caixa",
   "Loja online opcional, com catálogo público",
-  "Pagamentos M-Pesa, e-Mola e cartão (NetShop)",
+  "Pagamentos M-Pesa, e-Mola e cartão (PaySuite)",
   "Funciona em telemóvel, tablet e computador",
   "Colaboradores com níveis de acesso",
 ];

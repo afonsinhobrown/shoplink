@@ -1,7 +1,7 @@
 -- =========================================================
 -- MIGRAÇÃO v4 — LICENÇAS / ASSINATURA (ShopLink)
--- Licença mensal por loja (2.500,00 MZN), paga via NetShop
--- cartão (BCI / BIM). Ao pagar: +30 dias contados da data_fim
+-- Licença mensal por loja (2.500,00 MZN), paga via PaySuite
+-- (M-Pesa / e-Mola / cartão). Ao pagar: +30 dias contados da data_fim
 -- se ativa, ou do dia do pagamento se expirada.
 -- =========================================================
 

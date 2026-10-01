@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { createPaySuiteCharge, buildPaymentReference, type PaySuiteMethod } from "@/lib/paysuite";
+import {
+  createPaySuiteCharge,
+  buildPaymentReference,
+  classificarEstado,
+  findOrCreatePaySuiteContact,
+  PaySuiteApiError,
+  type PaySuiteMethod,
+} from "@/lib/paysuite";
+import { appBaseUrl } from "@/lib/app-url";
 
 const PAD = (n: number) => String(n).padStart(4, "0");
 
 class ApiError extends Error {}
 
 function metodoToPaySuite(metodo: string): PaySuiteMethod {
-  if (metodo === "cartao") return "card";
+  if (metodo === "cartao") return "credit_card";
   if (metodo === "emola") return "emola";
   return "mpesa";
 }
@@ -41,11 +49,15 @@ export async function POST(
     telefone,
     email,
     tipo = "reserva",
-    metodo_pagamento = "na_loja",
+    metodo_pagamento,
     tipo_entrega = "levantamento",
     endereco_entrega,
     itens,
   } = body ?? {};
+
+  // null/undefined significam "não escolhido": por defeito paga-se na loja.
+  // (um default no destructuring não serviria, porque não se aplica a null)
+  const metodo = metodo_pagamento ?? "na_loja";
 
   if (!nome?.trim()) {
     return NextResponse.json({ error: "Indique o seu nome" }, { status: 400 });
@@ -88,11 +100,11 @@ export async function POST(
     }
 
     if (isCompra) {
-      if (!["mpesa", "emola", "cartao"].includes(metodo_pagamento)) {
+      if (!["mpesa", "emola", "cartao"].includes(metodo)) {
         throw new ApiError("Escolha um método de pagamento online (M-Pesa, e-Mola ou Cartão).");
       }
     } else {
-      if (metodo_pagamento !== "na_loja") {
+      if (metodo !== "na_loja") {
         throw new ApiError("As reservas são pagas na loja.");
       }
     }
@@ -188,7 +200,7 @@ export async function POST(
         clienteOnlineId,
         numeroPedido,
         tipo,
-        metodo_pagamento,
+        metodo,
         tipo_entrega,
         endereco_entrega ?? null,
         subtotal,
@@ -219,95 +231,134 @@ export async function POST(
       status: pedido.rows[0].status,
       total: pedido.rows[0].total,
       data_expiracao: pedido.rows[0].data_expiracao,
-      metodo_pagamento,
+      metodo_pagamento: metodo,
     };
 
     // Compra online: iniciar cobrança real na PaySuite DEPOIS do commit (não segura a transação).
-    if (isCompra && metodo_pagamento !== "na_loja") {
+    if (isCompra && metodo !== "na_loja") {
       const reference = buildPaymentReference();
-      const protocol =
-        new URL(req.url).protocol || process.env.APP_URL?.startsWith("https") ? "https:" : "http:";
-      const base = (process.env.APP_URL || `${protocol}//${req.headers.get("host")}`).replace(/\/$/, "");
+      const base = appBaseUrl(req);
       const returnUrl = `${base}/loja/${slug}/pedido/${numeroPedido}?pg=1`;
+      const webhookUrl = `${base}/api/webhooks/paysuite`;
+
+      // A PaySuite não aceita telefone no corpo do pedido: para M-Pesa/e-Mola
+      // o número vai num contacto (E.164) referenciado por contact_id.
+      const contactId = await findOrCreatePaySuiteContact({
+        name: nome,
+        phone: telefone,
+        email,
+      });
+
+      let charge;
+      let metodoEfectivo: PaySuiteMethod | null = metodoToPaySuite(metodo);
 
       try {
-        const charge = await createPaySuiteCharge({
+        charge = await createPaySuiteCharge({
           amountMZN: total,
           reference,
-          method: metodoToPaySuite(metodo_pagamento),
-          msisdn: String(telefone).replace(/\D/g, ""),
+          method: metodoEfectivo,
+          contactId,
+          webhookUrl,
           returnUrl,
+          description: `Pedido ${numeroPedido} — ${L.nome}`.slice(0, 125),
         });
+      } catch (chargeErr) {
+        const e = chargeErr instanceof Error ? chargeErr.message : "erro ao contactar a PaySuite";
 
-        await pool.query(
-          `UPDATE pedido_online SET cobranca_id = $1, referencia_pagamento = $2 WHERE id = $3`,
-          [charge.id, reference, pedidoId]
-        );
+        // Se a cobrança directa ao método foi recusada (ex.: contacto
+        // indisponível para M-Pesa), cai para o checkout hospedado da
+        // PaySuite, onde o cliente escolhe e confirma o pagamento.
+        const recuperavel =
+          chargeErr instanceof PaySuiteApiError && chargeErr.status >= 400 && chargeErr.status < 500;
 
-        const chargeStatus = String(charge.status).toLowerCase();
-        if (chargeStatus === "paid" || chargeStatus === "succeeded") {
-          await pool.query(
-            `UPDATE pedido_online SET status_pagamento = 'pago',
-                    status = CASE WHEN tipo = 'compra_online' THEN 'confirmado' ELSE status END,
-                    data_atualizacao = now()
-             WHERE id = $1 AND status_pagamento = 'pendente'`,
-            [pedidoId]
-          );
-          return NextResponse.json({
-            pedido: pedidoData,
-            pagamento: { status: "pago", reference, total },
-          });
-        }
-        if (chargeStatus === "failed") {
-          const motivo = "cobrança recusada.";
-          await pool.query(
-            `UPDATE pedido_online SET status_pagamento = 'falhou', data_atualizacao = now() WHERE id = $1`,
-            [pedidoId]
-          );
+        if (!recuperavel || !metodoEfectivo) {
+          await pool
+            .query(
+              `UPDATE pedido_online SET status_pagamento = 'falhou', data_atualizacao = now()
+               WHERE id = $1 AND status_pagamento = 'pendente'`,
+              [pedidoId]
+            )
+            .catch(() => {});
           return NextResponse.json(
-            {
-              error: `A PaySuite recusou a cobrança: ${motivo}. Reveja os dados e tente novamente.`,
-              pedido: pedidoData,
-            },
+            { error: `Não foi possível criar a cobrança na PaySuite: ${e}`, pedido: pedidoData },
             { status: 502 }
           );
         }
 
-        return NextResponse.json({
-          pedido: pedidoData,
-          pagamento: {
-            status: "pendente",
+        try {
+          charge = await createPaySuiteCharge({
+            amountMZN: total,
             reference,
-            chargeId: charge.id,
-            checkoutUrl: charge.checkoutUrl ?? null,
-            total,
-          },
+            webhookUrl,
+            returnUrl,
+            description: `Pedido ${numeroPedido} — ${L.nome}`.slice(0, 125),
+          });
+          metodoEfectivo = null;
+        } catch (fallbackErr) {
+          const motivo =
+            fallbackErr instanceof Error
+              ? fallbackErr.message
+              : "erro ao contactar a PaySuite";
+          await pool
+            .query(
+              `UPDATE pedido_online SET status_pagamento = 'falhou', data_atualizacao = now()
+               WHERE id = $1 AND status_pagamento = 'pendente'`,
+              [pedidoId]
+            )
+            .catch(() => {});
+          return NextResponse.json(
+            { error: `Não foi possível criar a cobrança na PaySuite: ${motivo}`, pedido: pedidoData },
+            { status: 502 }
+          );
+        }
+      }
+
+      await pool.query(
+        `UPDATE pedido_online SET cobranca_id = $1, referencia_pagamento = $2 WHERE id = $3`,
+        [charge.id, reference, pedidoId]
+      );
+
+      const { paid, failed } = classificarEstado(charge.status);
+      if (paid) {
+        await pool.query(
+          `UPDATE pedido_online SET status_pagamento = 'pago',
+                  status = CASE WHEN tipo = 'compra_online' THEN 'confirmado' ELSE status END,
+                  data_atualizacao = now()
+           WHERE id = $1 AND status_pagamento = 'pendente'`,
+          [pedidoId]
+        );
+        return NextResponse.json({
+          pedido: { ...pedidoData, status_pagamento: "pago" },
+          pagamento: { status: "pago", reference, total, checkoutUrl: null },
         });
-      } catch (chargeErr: unknown) {
-        const chargeInfo =
-          chargeErr && typeof chargeErr === "object" && "charge" in chargeErr
-            ? (chargeErr as { charge: { failedReason?: string | null; responseDesc?: string | null } }).charge
-            : null;
-        const motivo =
-          chargeInfo?.failedReason ||
-          chargeInfo?.responseDesc ||
-          (chargeErr instanceof Error ? chargeErr.message : null) ||
-          "erro ao contactar a PaySuite";
-        await pool
-          .query(
-            `UPDATE pedido_online SET status_pagamento = 'falhou', data_atualizacao = now()
-             WHERE id = $1 AND status_pagamento = 'pendente'`,
-            [pedidoId]
-          )
-          .catch(() => {});
+      }
+      if (failed) {
+        await pool.query(
+          `UPDATE pedido_online SET status_pagamento = 'falhou', data_atualizacao = now()
+           WHERE id = $1 AND status_pagamento = 'pendente'`,
+          [pedidoId]
+        );
         return NextResponse.json(
           {
-            error: `Não foi possível criar a cobrança na PaySuite: ${motivo}`,
-            pedido: pedidoData,
+            error: "A PaySuite recusou a cobrança. Reveja os dados e tente novamente.",
+            pedido: { ...pedidoData, status_pagamento: "falhou" },
+            pagamento: null,
           },
           { status: 502 }
         );
       }
+
+      return NextResponse.json({
+        pedido: { ...pedidoData, status_pagamento: "pendente" },
+        pagamento: {
+          status: "pendente",
+          reference,
+          chargeId: charge.id,
+          checkoutUrl: charge.checkoutUrl ?? null,
+          metodo: metodoEfectivo,
+          total,
+        },
+      });
     }
 
     return NextResponse.json({ pedido: pedidoData, pagamento: null }, { status: 201 });

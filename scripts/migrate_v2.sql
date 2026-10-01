@@ -241,7 +241,7 @@ CREATE TABLE IF NOT EXISTS pedido_online (
     UNIQUE(loja_id, numero_pedido)
 );
 
--- Extensao é a cobranca NetShop (charge id) e a referencia de pagamento
+-- Extensão à cobrança PaySuite (charge id) e à referência de pagamento
 ALTER TABLE pedido_online ADD COLUMN IF NOT EXISTS cobranca_id varchar(120);
 ALTER TABLE pedido_online ADD COLUMN IF NOT EXISTS referencia_pagamento varchar(120);
 

@@ -12,13 +12,13 @@ Atualizado: 24/09/2026
 ## ✅ Feito
 
 - **PDV, Produtos, Stock, Vendas, Clientes, Caixa, Fornecedores, Categorias, Configurações.** (base)
-- **Loja online / NetShop:** catálogo público por loja, reservas e compra, webhook HMAC, confirmação/conclusão de pedidos (gera venda + movimento de stock), pagamentos M-Pesa/e-Mola/cartão.
-- **Licenças:** trial de **10 dias** para lojas novas, pagamento **2.500 MZN** via BCI/BIM, renovação **+30 dias** (da data-fim se ativa, senão do dia do pagamento), recibos, gate de licença, painel administrativo, webhook `LIC_`.
+- **Loja online / PaySuite:** catálogo público por loja, reservas e compra, webhook HMAC-SHA256 (payment.success / payment.failed), confirmação/conclusão de pedidos (gera venda + movimento de stock), pagamentos M-Pesa/e-Mola/cartão.
+- **Licenças:** trial de **10 dias** para lojas novas, pagamento **2.500 MZN** via PaySuite (M-Pesa/e-Mola/cartão no checkout hospedado), renovação **+30 dias** (da data-fim se ativa, senão do dia do pagamento), recibos, gate de licença, painel administrativo, webhook `LIC`.
 - **Landing page** da SaaS em `/` (com CTA adaptado à sessão).
 - **Alertas** (`/alertas`): stock baixo, lotes a expirar, fiado vencido, pedidos pendentes.
 - **Relatórios** (`/relatorios`): gráfico de vendas por dia, top produtos, métodos de pagamento (7/30/90 dias).
 - **Gestão Financeira** (`/financeiro`): saldos por conta, lançamentos (criar/listar), DRE mensal, contas a pagar/receber.
-- **Env NetShop** em produção (valores reais do serviço Render `cafepoint-monolith`).
+- **Env PaySuite** em produção: `PAYSUITE_API_TOKEN`, `PAYSUITE_WEBHOOK_SECRET`.
 - **Imagens de produto (Cloudinary):** upload no ecrã de produtos (múltiplas, com `principal` e miniatura), miniaturas nas listas, remoção com `destroy` no CDN. Endpoints `GET/POST/PATCH/DELETE /api/produtos/[id]/imagens` sobre a tabela `produto_imagem`. Env `CLOUDINARY_*` sincronizada na Vercel (Production).
 - **Limites de imagem:** 6 por produto, 5000 por loja, 5 MB por ficheiro. Ajustáveis por `CLOUDINARY_MAX_IMAGENS_PRODUTO`, `CLOUDINARY_MAX_IMAGENS_LOJA`, `CLOUDINARY_MAX_BYTES`. A quota é validada **antes** do upload, para não deixar ficheiros órfãos no CDN.
 
@@ -28,8 +28,8 @@ Atualizado: 24/09/2026
 
 ### Alta prioridade
 - [ ] **Ligar vendas ao financeiro:** criar automaticamente `lancamento_financeiro` (receita) e crédito na conta ao concluir uma venda, para o DRE refletir sem lançamento manual.
-- [ ] **Registar o webhook na NetShop:** `https://shoplink-iota.vercel.app/api/webhooks/netshop`.
-- [ ] **Testar pagamentos reais end-to-end** (M-Pesa, e-Mola, cartão BCI/BIM) com números/cartões reais e confirmar o webhook.
+- [x] **Registar o webhook na PaySuite:** `https://shoplink-iota.vercel.app/api/webhooks/paysuite` — enviado em cada cobrança via `webhook_url`, por isso não depende da config de conta.
+- [ ] **Testar pagamentos reais end-to-end** (M-Pesa, e-Mola, cartão) com números/cartões reais e confirmar o webhook.
 - [ ] **UI de lotes/validade:** a tabela `lote_stock` existe, mas não há ecrã para registar lote/validade na **entrada de stock** (essencial para mini supermercado; os alertas de validade dependem disto).
 
 ### Média prioridade
@@ -47,10 +47,10 @@ Atualizado: 24/09/2026
 
 ## 🧾 Notas técnicas / ambiente
 
-- **Migrações:** `node scripts/run_migrate.mjs migrate_v2.sql` e `... migrate_v4.sql` (o runner aceita o ficheiro como argumento). A v4 criou `licenca`/`licenca_pagamento`.
+- **Migrações:** `node scripts/run_migrate.mjs migrate_v2.sql`, `... migrate_v4.sql` e `... migrate_v5.sql` (o runner aceita o ficheiro como argumento). A v4 criou `licenca`/`licenca_pagamento`; a v5 corrigiu o `CHECK` de `licenca_pagamento.metodo` (aceitava só `bci|bim|manual`) e alargou a coluna para `varchar(20)` ( insuficiente para `credit_card`).
 - **Licença no gate:** `src/app/(app)/layout.tsx` chama `garantirLicenca()` (trial de 10 dias) antes de decidir; expirada/bloqueada mostra o painel de pagamento.
 - **Trial:** `DIAS_TRIAL = 10`; ciclo mensal `DIAS_LICENCA = 30` (`src/lib/licenca.ts`).
-- **NetShop:** `src/lib/netshop.ts` (prefixo pedidos `PO_`, licenças `LIC_`); sem credenciais → erro claro 502.
+- **PaySuite:** `src/lib/paysuite.ts` (prefixos de referência pedidos `PO`, licenças `LIC`; sem `_`/`-` porque a API recusa). A PaySuite **não** aceita telefone no corpo do pedido: M-Pesa/e-Mola usam um contacto E.164 (`contact_id`). Métodos válidos em `POST /payments`: `mpesa`, `emola`, `credit_card`.
 - **Lint:** novos client components com `useEffect(() => carregar(), ...)` precisam de `// eslint-disable-next-line react-hooks/set-state-in-effect`.
 - **Base de dados:** `DATABASE_URL` (Neon). ⚠️ **Confirmar que é uma DB dedicada ao ShopLink** (não partilhada com outros projetos) e garantir backups.
 - **Segredos:** `.env.local` está no `.gitignore` — nunca versionar. As envs de produção estão no Vercel.
@@ -63,11 +63,8 @@ Atualizado: 24/09/2026
 DATABASE_URL=...
 AUTH_SECRET=...
 APP_URL=https://shoplink-iota.vercel.app
-NETSHOP_API_KEY=...
-NETSHOP_WALLET_ID_MPESA=...
-NETSHOP_WALLET_ID_BIM=...
-NETSHOP_WALLET_ID_BCI=654027
-NETSHOP_WEBHOOK_SECRET=...
+PAYSUITE_API_TOKEN=...
+PAYSUITE_WEBHOOK_SECRET=...
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...

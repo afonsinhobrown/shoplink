@@ -1,9 +1,9 @@
 import "server-only";
 import { pool } from "./db";
 
-// Licença mensal ShopLink: 2.500,00 MZN por loja, paga via NetShop
-// (cartão BCI / BIM). Ao pagar: +30 dias da data_fim se ativa,
-// ou do dia do pagamento se a licença não está ativa.
+// Licença mensal ShopLink: 2.500,00 MZN por loja, paga via PaySuite
+// (M-Pesa, e-Mola ou cartão, escolhido no checkout da PaySuite). Ao pagar:
+// +30 dias da data_fim se ativa, ou do dia do pagamento se não está ativa.
 
 export const LICENSE_PREFIX = "LIC"; // referencia de pagamento das licenças (sem _ ou - que a PaySuite rejeita)
 

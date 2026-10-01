@@ -53,7 +53,13 @@ interface Dados {
 }
 
 const METODO_LABEL: Record<string, string> = {
-  card: "Cartão / PaySuite",
+  paysuite: "PaySuite (a confirmar)",
+  mpesa: "M-Pesa",
+  emola: "e-Mola",
+  credit_card: "Cartão",
+  card: "Cartão",
+  bci: "Cartão BCI",
+  bim: "Cartão BIM",
   manual: "Manual",
 };
 
@@ -97,6 +103,32 @@ export function LicencaPanel({ papel = "dono" }: { papel?: string }) {
     carregar();
   }, [carregar]);
 
+  // Ao voltar do checkout da PaySuite o webhook pode ainda não ter chegado,
+  // por isso confirmamos directamente com a PaySuite.
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/licenca/pagar");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelado || !data.status) return;
+        if (data.status === "pago") {
+          setAviso("Pagamento confirmado: " + (data.recibo ?? ""));
+          await carregar();
+        } else if (data.status === "falhou") {
+          setAviso("O pagamento anterior não foi concluído. Pode tentar novamente.");
+          await carregar();
+        }
+      } catch {
+        // sem reconcileio, o webhook continua a ser a fonte de verdade
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, [carregar]);
+
   async function pagar() {
     setAPagar("paysuite");
     setAviso(null);
@@ -105,7 +137,7 @@ export function LicencaPanel({ papel = "dono" }: { papel?: string }) {
       const res = await fetch("/api/licenca/pagar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ metodo: "card" }),
+        body: JSON.stringify({}),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Falha ao pagar.");

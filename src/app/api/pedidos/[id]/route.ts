@@ -176,7 +176,7 @@ export async function POST(
          `INSERT INTO lancamento_financeiro 
           (loja_id, conta_financeira_id, categoria_financeira_id, tipo, valor, descricao, origem_tipo, origem_id, status, utilizador_id)
           VALUES ($1, $2, $3, 'receita', $4, $5, 'venda', $6, 'confirmado', $7)`,
-         [r.sessao.lojaId, contaDestino, categoriaVendasId, Number(p.total), `Venda NetShop ${recibo} - ${met}`, vendaId, r.sessao.uid]
+         [r.sessao.lojaId, contaDestino, categoriaVendasId, Number(p.total), `Venda online ${recibo} - ${met}`, vendaId, r.sessao.uid]
       );
     }
 

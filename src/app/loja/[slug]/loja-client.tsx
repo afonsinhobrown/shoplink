@@ -120,7 +120,8 @@ export function LojaClient({
           telefone: telefone.trim(),
           email: email.trim() || null,
           tipo,
-          metodo_pagamento: tipo === "compra_online" ? metodo : null,
+          // Reservas pagam-se na loja: não enviamos método.
+          metodo_pagamento: tipo === "compra_online" ? metodo : undefined,
           tipo_entrega: tipoEntrega,
           endereco_entrega: tipoEntrega === "entrega_domicilio" ? endereco.trim() : null,
           itens,
@@ -130,18 +131,22 @@ export function LojaClient({
       if (!res.ok) throw new Error(data.error || "Não foi possível registar o pedido.");
 
       const pedido = data.pedido;
-      if (pedido.status_pagamento === "pago") {
-        setEstado({ tela: "pago", numero: pedido.numero_pedido });
-        return;
-      }
+      const pagamento = data.pagamento;
+
       if (tipo === "reserva") {
         setEstado({ tela: "pago", numero: pedido.numero_pedido });
         return;
       }
-      if (pedido.checkout_url) {
-        window.location.assign(pedido.checkout_url);
+      if (pagamento?.status === "pago") {
+        setEstado({ tela: "pago", numero: pedido.numero_pedido });
         return;
       }
+      if (pagamento?.checkoutUrl) {
+        window.location.assign(pagamento.checkoutUrl);
+        return;
+      }
+      // Sem URL de checkout: a cobrança foi criada directamente no método
+      // escolhido (M-Pesa/e-Mola). O cliente recebe o pedido no telemóvel.
       setEstado({ tela: "aguardando", numero: pedido.numero_pedido, metodo });
       vigiar(pedido.numero_pedido);
     } catch (e) {

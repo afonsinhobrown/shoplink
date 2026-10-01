@@ -1085,11 +1085,13 @@ Recomendação para `venda` e `venda_item`:
 
 ## 10. Licença / Assinatura (Adicionado na v4)
 
-Cada loja tem uma licença mensal de **2.500,00 MZN**, paga por cartão através da NetShop (BCI ou BIM). A validade renova por **+30 dias** contados do fim atual se a licença estiver ativa, ou do dia do pagamento se estiver expirada/bloqueada. Quando a licença expira ou é bloqueada, o utilizador é levado diretamente para o ecrã de pagamento/renovação.
+Cada loja tem uma licença mensal de **2.500,00 MZN**, paga através da **PaySuite** (M-Pesa, e-Mola ou cartão, escolhido no checkout hospedado da PaySuite). A validade renova por **+30 dias** contados do fim atual se a licença estiver ativa, ou do dia do pagamento se estiver expirada/bloqueada. Quando a licença expira ou é bloqueada, o utilizador é levado diretamente para o ecrã de pagamento/renovação.
 
 **Novas tabelas (`scripts/migrate_v4.sql`):**
 - `licenca` — uma por loja: `estado` (`ativa|expirada|bloqueada`), `plano` (`mensal`), `valor_mensal` (2500), `data_inicio`, `data_fim`.
-- `licenca_pagamento` — histórico: `metodo` (`bci|bim|manual`), `referencia_pagamento` (prefixo `LIC_` — identifica a app nos webhooks, como `PO_` nos pedidos), `cobranca_id`/`checkout_url` (NetShop), `status` (`pendente|pago|falhou|reembolsado`), `periodo_inicio`/`periodo_fim` (período faturado), `recibo_numero` (ex. `REC-LIC-YYYYMMDD-SS`), `recibo_enviado`/`data_envio_recibo`.
+- `licenca_pagamento` — histórico: `metodo` (`paysuite` enquanto o método real é desconhecido, depois `mpesa|emola|credit_card`; `bci|bim` legados de NetShop, e `manual`), `referencia_pagamento` (prefixo `LIC` — identifica a app nos webhooks, como `PO` nos pedidos), `cobranca_id`/`checkout_url` (PaySuite), `status` (`pendente|pago|falhou|reembolsado`), `periodo_inicio`/`periodo_fim` (período faturado), `recibo_numero` (ex. `REC-LIC-YYYYMMDD-SS`), `recibo_enviado`/`data_envio_recibo`.
+
+> A `CHECK` de `metodo` foi corrigida em `scripts/migrate_v5.sql` (aceitava apenas `bci|bim|manual`) e a coluna alargada para `varchar(20)`.
 
 **Renovação automática (`aplicarPagamentoLicenca`):**
 ```
@@ -1099,10 +1101,13 @@ estado -> 'ativa'; licenca_pagamento -> 'pago'
 
 **Endpoints:**
 - `GET /api/licenca` — estado + histórico de pagamentos/recibos da loja.
-- `POST /api/licenca/pagar` — `{metodo: 'bci' | 'bim'}` → cobrança NetShop (cartão), 2500 MZN.
+- `POST /api/licenca/pagar` — cria a cobrança de 2500 MZN no checkout hospedado da PaySuite (sem `method`: o cliente escolhe M-Pesa/e-Mola/cartão).
+- `GET /api/licenca/pagar` — reconcilia o pagamento pendente com a PaySuite (fallback quando o webhook não chega).
 - `POST /api/licenca` — `{acao: 'bloquear' | 'reativar'}` (controlo administrativo).
 - `POST /api/licenca/recibos/{id}/enviar` — marca o recibo como enviado.
-- Webhook NetShop: referências `LIC_…` renovam a licença (mesmo fluxo HMAC dos pedidos `PO_`).
+- `POST /api/webhooks/paysuite` — HMAC-SHA256 em `X-Signature`. Referências `LIC…` renovam a licença, `PO…` confirmam pedidos (mesmo fluxo dos dois).
+
+> A referência da PaySuite é alfanumérica (sem `_` nem `-`), por isso os prefixos são `PO`/`LIC` e não `PO_`/`LIC_`.
 
 **Porta de licença:** o layout do grupo `(app)` verifica a licença da loja; se não estiver ativa (expirada/bloqueada), renderiza o painel de pagamento em vez do AppShell.
 
