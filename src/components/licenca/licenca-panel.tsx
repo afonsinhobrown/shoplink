@@ -53,8 +53,7 @@ interface Dados {
 }
 
 const METODO_LABEL: Record<string, string> = {
-  bci: "Cartão BCI",
-  bim: "Cartão BIM",
+  card: "Cartão / PaySuite",
   manual: "Manual",
 };
 
@@ -98,15 +97,15 @@ export function LicencaPanel({ papel = "dono" }: { papel?: string }) {
     carregar();
   }, [carregar]);
 
-  async function pagar(metodo: "bci" | "bim") {
-    setAPagar(metodo);
+  async function pagar() {
+    setAPagar("paysuite");
     setAviso(null);
     setErro(null);
     try {
       const res = await fetch("/api/licenca/pagar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ metodo }),
+        body: JSON.stringify({ metodo: "card" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Falha ao pagar.");
@@ -301,7 +300,7 @@ table{width:100%;border-collapse:collapse;margin-top:16px}th,td{text-align:left;
           <p className="mt-2 text-xl font-bold text-emerald-400">
             {formatarMoeda(L.valor_mensal)}
           </p>
-          <p className="mt-1 text-xs text-zinc-500">via NetShop · cartão BCI ou BIM</p>
+          <p className="mt-1 text-xs text-zinc-500">via PaySuite · Cartão, M-Pesa ou e-Mola</p>
         </Card>
       </div>
 
@@ -317,37 +316,18 @@ table{width:100%;border-collapse:collapse;margin-top:16px}th,td{text-align:left;
                 variant="secondary"
                 size="lg"
                 disabled={aPagar !== null}
-                onClick={() => pagar("bci")}
+                onClick={() => pagar()}
                 className="justify-start"
               >
-                {aPagar === "bci" ? (
+                {aPagar ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  <KeyRound className="h-5 w-5 text-sky-400" />
+                  <CreditCard className="h-5 w-5 text-sky-400" />
                 )}
                 <span className="text-left">
-                  <span className="block">Cartão BCI</span>
+                  <span className="block">Pagar Licença</span>
                   <span className="block text-xs font-normal text-zinc-500">
-                    {formatarMoeda(L.valor_mensal)} · Visa/Bancário
-                  </span>
-                </span>
-              </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                disabled={aPagar !== null}
-                onClick={() => pagar("bim")}
-                className="justify-start"
-              >
-                {aPagar === "bim" ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <CreditCard className="h-5 w-5 text-amber-400" />
-                )}
-                <span className="text-left">
-                  <span className="block">Cartão BIM</span>
-                  <span className="block text-xs font-normal text-zinc-500">
-                    {formatarMoeda(L.valor_mensal)} · Visa Internacional
+                    {formatarMoeda(L.valor_mensal)} · M-Pesa, e-Mola ou Cartão
                   </span>
                 </span>
               </Button>
