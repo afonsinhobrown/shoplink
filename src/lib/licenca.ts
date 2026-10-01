@@ -5,7 +5,7 @@ import { pool } from "./db";
 // (cartão BCI / BIM). Ao pagar: +30 dias da data_fim se ativa,
 // ou do dia do pagamento se a licença não está ativa.
 
-export const LICENSE_PREFIX = "LIC_"; // referencia de pagamento das licenças (webhook)
+export const LICENSE_PREFIX = "LIC"; // referencia de pagamento das licenças (sem _ ou - que a PaySuite rejeita)
 
 export const DIAS_LICENCA = 30;
 export const DIAS_TRIAL = 10;
@@ -54,10 +54,9 @@ export function diasRestantes(dataFim: string | Date | null): number {
 }
 
 export function buildLicencaReference(): string {
-  return `${LICENSE_PREFIX}${Date.now().toString(36).toUpperCase()}${Math.random()
-    .toString(36)
-    .substring(2, 6)
-    .toUpperCase()}`;
+  const stamp = Date.now().toString(36).toUpperCase();
+  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `${LICENSE_PREFIX}${stamp}${rand}`;
 }
 
 /** Build do recibo de pagamento da licença (humano). */
