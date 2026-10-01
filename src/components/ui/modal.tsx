@@ -52,18 +52,18 @@ export function Modal({
           sizes[size]
         )}
       >
-        <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-zinc-800 px-5 py-4">
           <h3 className="text-lg font-semibold text-zinc-50">{title}</h3>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+            className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
           >
             <X size={18} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">{children}</div>
         {footer && (
-          <div className="flex justify-end gap-2 border-t border-zinc-800 px-5 py-4">
+          <div className="flex shrink-0 justify-end gap-2 border-t border-zinc-800 px-5 py-4">
             {footer}
           </div>
         )}
