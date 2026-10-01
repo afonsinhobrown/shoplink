@@ -30,6 +30,10 @@ interface LojaConfig {
   imposto_padrao: number;
   logotipo_url: string | null;
   tempo_inatividade: number;
+  permite_venda_online: boolean;
+  permite_reserva: boolean;
+  slug_publico: string | null;
+  tempo_expiracao_reserva_horas: number;
 }
 
 interface Utilizador { id: string; papel: string; nome: string; email: string; ativo: boolean }
@@ -143,6 +147,43 @@ export function ConfiguracoesClient({ ehDono }: { ehDono: boolean }) {
               <p className="mt-1 text-xs text-zinc-500">
                 Se não houver atividade (movimento de rato, cliques ou teclado) durante este tempo, a sessão será encerrada.
               </p>
+            </Field>
+          </div>
+        </section>
+
+        {/* Loja Online */}
+        <section className="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-5">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-400">
+            Loja Online (Catálogo Público)
+          </h2>
+          <div className="space-y-4">
+            <Field label="Endereço da Loja Online (slug)">
+              <div className="flex gap-2">
+                <Input
+                  value={form.slug_publico ?? ""}
+                  onChange={(e) => set("slug_publico", e.target.value)}
+                  disabled={!ehDono}
+                  placeholder="minha-loja"
+                  className="w-full"
+                />
+              </div>
+              <p className="mt-1 text-xs text-zinc-500">
+                Se for "minha-loja", o link será: shoplink-iota.vercel.app/loja/minha-loja
+              </p>
+            </Field>
+            
+            <Row label="Permitir vendas online" hint="Ativar o catálogo público" value={form.permite_venda_online ?? false} onChange={() => flip("permite_venda_online")} disabled={!ehDono} />
+            <Row label="Permitir reservas" hint="Clientes podem reservar produtos para levantar na loja" value={form.permite_reserva ?? false} onChange={() => flip("permite_reserva")} disabled={!ehDono} />
+            
+            <Field label="Tempo de expiração da reserva (horas)">
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                value={form.tempo_expiracao_reserva_horas ?? 24}
+                onChange={(e) => set("tempo_expiracao_reserva_horas", parseInt(e.target.value) || 24)}
+                disabled={!ehDono}
+              />
             </Field>
           </div>
         </section>
