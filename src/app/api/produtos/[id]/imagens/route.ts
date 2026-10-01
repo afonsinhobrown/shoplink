@@ -28,12 +28,14 @@ async function produtoDaLoja(produtoId: string, lojaId: string) {
   return r.rows.length > 0;
 }
 
-/** Contagens em uma só viagem, para validar a quota antes de gastar CDN. */
+/** Contagens em uma só viagem, para validar a quota antes de gastar CDN.
+ *  `::int` é obrigatório: COUNT(*) devolve bigint e o `pg` serializa-o como
+ *  string, o que faria `total === 0` ser falso mesmo quando é zero. */
 async function contarImagens(produtoId: string, lojaId: string) {
   const r = await pool.query<{ do_produto: number; da_loja: number }>(
     `SELECT
-       (SELECT COUNT(*) FROM produto_imagem WHERE produto_id = $1) AS do_produto,
-       (SELECT COUNT(*) FROM produto_imagem pi
+       (SELECT COUNT(*)::int FROM produto_imagem WHERE produto_id = $1) AS do_produto,
+       (SELECT COUNT(*)::int FROM produto_imagem pi
           JOIN produto p ON p.id = pi.produto_id
          WHERE p.loja_id = $2) AS da_loja`,
     [produtoId, lojaId]
