@@ -20,6 +20,7 @@ Atualizado: 24/09/2026
 - **Gestão Financeira** (`/financeiro`): saldos por conta, lançamentos (criar/listar), DRE mensal, contas a pagar/receber.
 - **Env NetShop** em produção (valores reais do serviço Render `cafepoint-monolith`).
 - **Imagens de produto (Cloudinary):** upload no ecrã de produtos (múltiplas, com `principal` e miniatura), miniaturas nas listas, remoção com `destroy` no CDN. Endpoints `GET/POST/PATCH/DELETE /api/produtos/[id]/imagens` sobre a tabela `produto_imagem`. Env `CLOUDINARY_*` sincronizada na Vercel (Production).
+- **Limites de imagem:** 6 por produto, 5000 por loja, 5 MB por ficheiro. Ajustáveis por `CLOUDINARY_MAX_IMAGENS_PRODUTO`, `CLOUDINARY_MAX_IMAGENS_LOJA`, `CLOUDINARY_MAX_BYTES`. A quota é validada **antes** do upload, para não deixar ficheiros órfãos no CDN.
 
 ---
 
@@ -71,6 +72,10 @@ CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
 CLOUDINARY_URL=...
+# opcionais (defaults entre parenteses)
+CLOUDINARY_MAX_IMAGENS_PRODUTO=6
+CLOUDINARY_MAX_IMAGENS_LOJA=5000
+CLOUDINARY_MAX_BYTES=5242880
 ```
 (os valores reais estão no `.env.local` local e no painel do Vercel.)
 
