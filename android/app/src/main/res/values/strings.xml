@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">shoplink</string>
+    <string name="title_activity_main">shoplink</string>
+    <string name="package_name">com.shoplink.app</string>
+    <string name="custom_url_scheme">com.shoplink.app</string>
+</resources>
