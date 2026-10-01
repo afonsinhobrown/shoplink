@@ -5,17 +5,30 @@ import { ImagePlus, Loader2, Star, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import type { ImagemProdutoDTO } from "@/lib/types";
 
+type RespostaImagens = {
+  imagens: ImagemProdutoDTO[];
+  limite: number;
+  ok?: boolean;
+  aviso?: string | null;
+};
+
 export function ImagensProduto({ produtoId }: { produtoId: string | null }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [imagens, setImagens] = useState<ImagemProdutoDTO[]>([]);
+  const [limite, setLimite] = useState(6);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
 
+  const noLimite = imagens.length >= limite;
+
   useEffect(() => {
     if (!produtoId) return;
-    apiFetch<ImagemProdutoDTO[]>(`/api/produtos/${produtoId}/imagens`)
-      .then(setImagens)
+    apiFetch<RespostaImagens>(`/api/produtos/${produtoId}/imagens`)
+      .then((r) => {
+        setImagens(r.imagens ?? []);
+        if (r.limite) setLimite(r.limite);
+      })
       .catch(() => setImagens([]));
   }, [produtoId]);
 
@@ -23,8 +36,18 @@ export function ImagensProduto({ produtoId }: { produtoId: string | null }) {
     if (!produtoId || !ficheiros?.length) return;
     setEnviando(true);
     setErro("");
+    setAviso("");
     try {
-      for (const ficheiro of Array.from(ficheiros)) {
+      const restantes = limite - imagens.length;
+      if (restantes <= 0) {
+        setErro(`Limite de ${limite} imagens por produto atingido`);
+        return;
+      }
+      const todos = Array.from(ficheiros);
+      const aceite = todos.slice(0, restantes);
+      const ignorados = todos.length - aceite.length;
+
+      for (const ficheiro of aceite) {
         const fd = new FormData();
         fd.append("ficheiro", ficheiro);
         const res = await fetch(`/api/produtos/${produtoId}/imagens`, {
@@ -34,6 +57,11 @@ export function ImagensProduto({ produtoId }: { produtoId: string | null }) {
         const data = await res.json().catch(() => null);
         if (!res.ok) throw new Error(data?.error ?? `Erro ${res.status}`);
         setImagens((lista) => [...lista, data as ImagemProdutoDTO]);
+      }
+      if (ignorados > 0) {
+        setAviso(
+          `Só foi possível enviar ${aceite.length} de ${todos.length}: o limite é ${limite} imagens por produto`
+        );
       }
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha ao enviar a imagem");
@@ -47,11 +75,11 @@ export function ImagensProduto({ produtoId }: { produtoId: string | null }) {
     if (!produtoId) return;
     setErro("");
     try {
-      const dados = await apiFetch<ImagemProdutoDTO[]>(
+      const r = await apiFetch<RespostaImagens>(
         `/api/produtos/${produtoId}/imagens?imagemId=${imagem.id}`,
         { method: "PATCH" }
       );
-      setImagens(dados);
+      setImagens(r.imagens);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha ao definir a imagem principal");
     }
@@ -63,13 +91,12 @@ export function ImagensProduto({ produtoId }: { produtoId: string | null }) {
     setErro("");
     setAviso("");
     try {
-      const dados = await apiFetch<{ ok: boolean; aviso: string | null }>(
+      const r = await apiFetch<RespostaImagens>(
         `/api/produtos/${produtoId}/imagens?imagemId=${imagem.id}`,
         { method: "DELETE" }
       );
-      const restantes = await apiFetch<ImagemProdutoDTO[]>(`/api/produtos/${produtoId}/imagens`);
-      setImagens(restantes);
-      setAviso(dados.aviso ?? "");
+      setImagens(r.imagens);
+      setAviso(r.aviso ?? "");
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha ao remover a imagem");
     }
@@ -97,8 +124,8 @@ export function ImagensProduto({ produtoId }: { produtoId: string | null }) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          disabled={enviando}
-          className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 px-3 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800/60 disabled:opacity-50"
+          disabled={enviando || noLimite}
+          className="inline-flex items-center gap-2 rounded-xl border border-zinc-800 px-3 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
         >
           {enviando ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -107,7 +134,9 @@ export function ImagensProduto({ produtoId }: { produtoId: string | null }) {
           )}
           {enviando ? "A enviar…" : "Adicionar imagem"}
         </button>
-        <span className="text-xs text-zinc-500">JPG, PNG ou WEBP até 5 MB</span>
+        <span className="text-xs text-zinc-500">
+          {imagens.length}/{limite} · JPG, PNG ou WEBP até 5 MB
+        </span>
       </div>
 
       {erro && (

@@ -4,6 +4,8 @@ import { apiPapel } from "@/lib/api-auth";
 import {
   cloudinaryConfigurado,
   destroyImagem,
+  MAX_IMAGENS_POR_LOJA,
+  MAX_IMAGENS_POR_PRODUTO,
   uploadImagem,
   urlThumbnail,
   validarImagem,
@@ -26,6 +28,34 @@ async function produtoDaLoja(produtoId: string, lojaId: string) {
   return r.rows.length > 0;
 }
 
+/** Contagens em uma só viagem, para validar a quota antes de gastar CDN. */
+async function contarImagens(produtoId: string, lojaId: string) {
+  const r = await pool.query<{ do_produto: number; da_loja: number }>(
+    `SELECT
+       (SELECT COUNT(*) FROM produto_imagem WHERE produto_id = $1) AS do_produto,
+       (SELECT COUNT(*) FROM produto_imagem pi
+          JOIN produto p ON p.id = pi.produto_id
+         WHERE p.loja_id = $2) AS da_loja`,
+    [produtoId, lojaId]
+  );
+  return { produto: r.rows[0].do_produto, loja: r.rows[0].da_loja };
+}
+
+/** Resposta única para GET/PATCH/DELETE: a UI lê sempre a mesma coisa. */
+async function listar(produtoId: string) {
+  const result = await pool.query<ImagemRow>(
+    `SELECT id, cloudinary_public_id, url, url_thumbnail, principal, ordem
+       FROM produto_imagem WHERE produto_id = $1
+      ORDER BY principal DESC, ordem ASC`,
+    [produtoId]
+  );
+  return {
+    imagens: result.rows,
+    limite: MAX_IMAGENS_POR_PRODUTO,
+    maxPorLoja: MAX_IMAGENS_POR_LOJA,
+  };
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -38,13 +68,7 @@ export async function GET(
     return NextResponse.json({ error: "Produto não encontrado" }, { status: 404 });
   }
 
-  const result = await pool.query(
-    `SELECT id, cloudinary_public_id, url, url_thumbnail, principal, ordem
-       FROM produto_imagem WHERE produto_id = $1
-      ORDER BY principal DESC, ordem ASC`,
-    [id]
-  );
-  return NextResponse.json(result.rows);
+  return NextResponse.json(await listar(id));
 }
 
 export async function POST(
@@ -76,12 +100,21 @@ export async function POST(
     return NextResponse.json({ error: erro }, { status: 400 });
   }
 
-  const contar = await pool.query<{ total: number }>(
-    "SELECT COUNT(*)::int AS total FROM produto_imagem WHERE produto_id = $1",
-    [id]
-  );
-  const total = contar.rows[0].total;
-  const primeira = total === 0;
+  // Quota validada ANTES do upload: depois de enviar, o ficheiro já existe no
+  // CDN e um 429 deixaria um órfão para limpar à mão.
+  const { produto: total, loja: daLoja } = await contarImagens(id, r.sessao.lojaId);
+  if (total >= MAX_IMAGENS_POR_PRODUTO) {
+    return NextResponse.json(
+      { error: `Limite de ${MAX_IMAGENS_POR_PRODUTO} imagens por produto atingido` },
+      { status: 429 }
+    );
+  }
+  if (daLoja >= MAX_IMAGENS_POR_LOJA) {
+    return NextResponse.json(
+      { error: `Limite de ${MAX_IMAGENS_POR_LOJA} imagens da loja atingido` },
+      { status: 429 }
+    );
+  }
 
   let uploaded;
   try {
@@ -106,7 +139,7 @@ export async function POST(
       uploaded.public_id,
       url,
       urlThumbnail(url),
-      primeira,
+      total === 0,
       total,
       uploaded.width ?? null,
       uploaded.height ?? null,
@@ -143,12 +176,8 @@ export async function PATCH(
   await pool.query("UPDATE produto_imagem SET principal = false WHERE produto_id = $1", [id]);
   await pool.query("UPDATE produto_imagem SET principal = true WHERE id = $1", [imagemId]);
 
-  const imagens = await pool.query<ImagemRow>(
-    `SELECT id, cloudinary_public_id, url, url_thumbnail, principal, ordem
-       FROM produto_imagem WHERE produto_id = $1 ORDER BY principal DESC, ordem ASC`,
-    [id]
-  );
-  return NextResponse.json(imagens.rows);
+  const imagens = await listar(id);
+  return NextResponse.json(imagens);
 }
 
 export async function DELETE(
@@ -196,5 +225,5 @@ export async function DELETE(
       aviso = "Imagem removida do catálogo, mas não foi possível apagá-la no Cloudinary";
     }
   }
-  return NextResponse.json({ ok: true, aviso });
+  return NextResponse.json({ ...(await listar(id)), ok: true, aviso });
 }
