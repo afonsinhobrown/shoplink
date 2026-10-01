@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { createNetShopCharge, buildPaymentReference, type NetShopMethod } from "@/lib/netshop";
+import { createPaySuiteCharge, buildPaymentReference, type PaySuiteMethod } from "@/lib/paysuite";
 
 const PAD = (n: number) => String(n).padStart(4, "0");
 
 class ApiError extends Error {}
 
-function metodoToNetShop(metodo: string): NetShopMethod {
+function metodoToPaySuite(metodo: string): PaySuiteMethod {
   if (metodo === "cartao") return "card";
   if (metodo === "emola") return "emola";
   return "mpesa";
 }
 
 // POST /api/publico/[slug]/pedidos
-// Cria um pedido online: tipo reserva (paga na loja) ou compra_online (paga já via NetShop).
+// Cria um pedido online: tipo reserva (paga na loja) ou compra_online (paga já via PaySuite).
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
@@ -222,7 +222,7 @@ export async function POST(
       metodo_pagamento,
     };
 
-    // Compra online: iniciar cobrança real na NetShop DEPOIS do commit (não segura a transação).
+    // Compra online: iniciar cobrança real na PaySuite DEPOIS do commit (não segura a transação).
     if (isCompra && metodo_pagamento !== "na_loja") {
       const reference = buildPaymentReference();
       const protocol =
@@ -231,10 +231,10 @@ export async function POST(
       const returnUrl = `${base}/loja/${slug}/pedido/${numeroPedido}?pg=1`;
 
       try {
-        const charge = await createNetShopCharge({
+        const charge = await createPaySuiteCharge({
           amountMZN: total,
           reference,
-          method: metodoToNetShop(metodo_pagamento),
+          method: metodoToPaySuite(metodo_pagamento),
           msisdn: String(telefone).replace(/\D/g, ""),
           returnUrl,
         });
@@ -266,7 +266,7 @@ export async function POST(
           );
           return NextResponse.json(
             {
-              error: `A NetShop recusou a cobrança: ${motivo}. Reveja os dados e tente novamente.`,
+              error: `A PaySuite recusou a cobrança: ${motivo}. Reveja os dados e tente novamente.`,
               pedido: pedidoData,
             },
             { status: 502 }
@@ -292,7 +292,7 @@ export async function POST(
           chargeInfo?.failedReason ||
           chargeInfo?.responseDesc ||
           (chargeErr instanceof Error ? chargeErr.message : null) ||
-          "erro ao contactar a NetShop";
+          "erro ao contactar a PaySuite";
         await pool
           .query(
             `UPDATE pedido_online SET status_pagamento = 'falhou', data_atualizacao = now()
@@ -302,7 +302,7 @@ export async function POST(
           .catch(() => {});
         return NextResponse.json(
           {
-            error: `Não foi possível criar a cobrança na NetShop: ${motivo}`,
+            error: `Não foi possível criar a cobrança na PaySuite: ${motivo}`,
             pedido: pedidoData,
           },
           { status: 502 }

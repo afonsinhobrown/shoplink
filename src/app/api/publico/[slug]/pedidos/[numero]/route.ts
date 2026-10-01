@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { getNetShopCharge } from "@/lib/netshop";
+import { getPaySuiteCharge } from "@/lib/paysuite";
 
 // GET /api/publico/[slug]/pedidos/[numero] -> estado público do pedido (polling)
 export async function GET(
@@ -34,7 +34,7 @@ export async function GET(
 
   // Confirmação por polling como segurança (webhook pode atrasar ou não chegar)
   if (p.status_pagamento === "pendente" && p.cobranca_id) {
-    const check = await getNetShopCharge(p.cobranca_id);
+    const check = await getPaySuiteCharge(p.cobranca_id);
     if (check.paid) {
       await pool.query(
         `UPDATE pedido_online

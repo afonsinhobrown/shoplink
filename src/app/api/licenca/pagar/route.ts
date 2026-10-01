@@ -6,22 +6,18 @@ import {
   aplicarPagamentoLicenca,
   garantirLicenca,
 } from "@/lib/licenca";
-import { createNetShopCharge } from "@/lib/netshop";
+import { createPaySuiteCharge } from "@/lib/paysuite";
 
-// POST /api/licenca/pagar  body: { metodo: 'bci' | 'bim' }
-// Licença mensal (2.500,00 MZN) paga por cartão via NetShop (BCI ou BIM).
+// POST /api/licenca/pagar  body: { metodo: 'cartao' }
+// Licença mensal (2.500,00 MZN) paga por cartão via PaySuite
 export async function POST(req: Request) {
   const r = await apiPapel("dono");
   if (r.response) return r.response;
 
-  const body = await req.json();
-  const metodo = body?.metodo;
-  if (!["bci", "bim"].includes(metodo)) {
-    return NextResponse.json(
-      { error: "Escolha o método de pagamento: BCI ou BIM." },
-      { status: 400 }
-    );
-  }
+  // PaySuite deixa o cliente escolher o método de pagamento no checkout deles
+  // então não precisamos forçar a escolha aqui. Mas para manter compatível:
+  const body = await req.json().catch(() => ({}));
+  const metodo = body?.metodo || 'card';
 
   await garantirLicenca(r.sessao.lojaId);
   const lic = await pool.query(
@@ -46,17 +42,17 @@ export async function POST(req: Request) {
   const returnUrl = `${base}/licenca?recibo=1`;
 
   try {
-    const charge = await createNetShopCharge({
+    const charge = await createPaySuiteCharge({
       amountMZN: valor,
       reference,
-      method: metodo === "bci" ? "card_bci" : "card",
+      method: "card", // força cartão
       returnUrl,
     });
 
     await pool.query(
       `UPDATE licenca_pagamento SET cobranca_id = $1, checkout_url = $2, observacao = $3
        WHERE id = $4`,
-      [charge.id, charge.checkoutUrl ?? null, `Cobrança NetShop ${charge.status}`.slice(0, 250), pagamentoId]
+      [charge.id, charge.checkoutUrl ?? null, `Cobrança PaySuite ${charge.status}`.slice(0, 250), pagamentoId]
     );
 
     const st = String(charge.status).toLowerCase();
@@ -88,7 +84,7 @@ export async function POST(req: Request) {
         [pagamentoId]
       );
       return NextResponse.json(
-        { error: "A NetShop recusou o pagamento. Tente novamente." },
+        { error: "A PaySuite recusou o pagamento. Tente novamente." },
         { status: 502 }
       );
     }
@@ -103,7 +99,7 @@ export async function POST(req: Request) {
     const motivo =
       e && typeof e === "object" && "message" in e
         ? String((e as Error).message)
-        : "erro ao contactar a NetShop";
+        : "erro ao contactar a PaySuite";
     await pool
       .query(`UPDATE licenca_pagamento SET status = 'falhou' WHERE id = $1`, [
         pagamentoId,

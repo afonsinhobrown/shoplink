@@ -374,7 +374,7 @@ export function LojaClient({
                   ))}
                 </div>
                 <p className="mt-2 text-[11px] text-zinc-600">
-                  Pagamentos processados com seguranca pela <b>NetShop</b>. Paga no telemovel ou com cartao, conforme o metodo escolhido.
+                  Pagamentos processados com seguranca pela <b>PaySuite</b>. Paga no telemovel ou com cartao, conforme o metodo escolhido.
                 </p>
               </div>
             )}
