@@ -18,13 +18,18 @@ export async function GET(req: Request) {
            p.tipo_venda, p.unidade_medida,
            p.preco_custo, p.preco_venda,
            p.controla_stock, p.stock_minimo, p.ativo,
-           p.disponivel_online, p.descricao_publica, p.isento_imposto,
+p.disponivel_online, p.descricao_publica, p.isento_imposto,
+           COALESCE(pi.url_thumbnail, pi.url) AS imagem,
            COALESCE(v.quantidade_atual, 0) AS stock_atual
-    FROM produto p
-    LEFT JOIN categoria c ON c.id = p.categoria_id
-    LEFT JOIN fornecedor f ON f.id = p.fornecedor_id
-    LEFT JOIN vw_stock_atual v ON v.produto_id = p.id
-    WHERE p.loja_id = $1`;
+     FROM produto p
+     LEFT JOIN categoria c ON c.id = p.categoria_id
+     LEFT JOIN fornecedor f ON f.id = p.fornecedor_id
+     LEFT JOIN LATERAL (
+       SELECT url_thumbnail, url FROM produto_imagem
+       WHERE produto_id = p.id ORDER BY principal DESC, ordem ASC LIMIT 1
+     ) pi ON true
+     LEFT JOIN vw_stock_atual v ON v.produto_id = p.id
+     WHERE p.loja_id = $1`;
   if (ativos) {
     params.push(true);
     sql += ` AND p.ativo = $${params.length}`;

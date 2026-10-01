@@ -19,6 +19,7 @@ Atualizado: 24/09/2026
 - **Relatórios** (`/relatorios`): gráfico de vendas por dia, top produtos, métodos de pagamento (7/30/90 dias).
 - **Gestão Financeira** (`/financeiro`): saldos por conta, lançamentos (criar/listar), DRE mensal, contas a pagar/receber.
 - **Env NetShop** em produção (valores reais do serviço Render `cafepoint-monolith`).
+- **Imagens de produto (Cloudinary):** upload no ecrã de produtos (múltiplas, com `principal` e miniatura), miniaturas nas listas, remoção com `destroy` no CDN. Endpoints `GET/POST/PATCH/DELETE /api/produtos/[id]/imagens` sobre a tabela `produto_imagem`. Env `CLOUDINARY_*` sincronizada na Vercel (Production).
 
 ---
 
@@ -38,7 +39,6 @@ Atualizado: 24/09/2026
 - [ ] **Renovação automática** de licença (hoje é pagamento manual).
 
 ### Baixa prioridade
-- [ ] Imagens de produto (Cloudinary) — tabela `produto_imagem` existe, falta UI.
 - [ ] Compras a fornecedores (tabelas `compra`/`compra_item` existem, falta UI).
 - [ ] Domínio próprio (hoje só `*.vercel.app`).
 
@@ -67,5 +67,11 @@ NETSHOP_WALLET_ID_MPESA=...
 NETSHOP_WALLET_ID_BIM=...
 NETSHOP_WALLET_ID_BCI=654027
 NETSHOP_WEBHOOK_SECRET=...
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+CLOUDINARY_URL=...
 ```
 (os valores reais estão no `.env.local` local e no painel do Vercel.)
+
+⚠️ **Ambientes Preview e Development não têm `DATABASE_URL` nem `AUTH_SECRET`** — só Production está configurado. Todos os deployments do histórico são Production, por isso nunca foi bloqueante, mas um Preview disparado por um branch novo vai falhar. Para corrigir: replicar as vars para `preview` (`vercel env add <NOME> preview --project shoplink --sensitive`, feeding por stdin).

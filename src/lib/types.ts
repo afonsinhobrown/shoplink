@@ -24,6 +24,16 @@ export interface ProdutoDTO {
   disponivel_online: boolean;
   descricao_publica?: string | null;
   isento_imposto?: boolean;
+  imagem?: string | null;
+}
+
+export interface ImagemProdutoDTO {
+  id: string;
+  cloudinary_public_id: string;
+  url: string;
+  url_thumbnail?: string | null;
+  principal: boolean;
+  ordem: number;
 }
 
 export interface CategoriaDTO {

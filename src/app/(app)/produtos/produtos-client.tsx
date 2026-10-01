@@ -17,6 +17,7 @@ import { Input, Select, Field, Switch, Textarea } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Badge } from "@/components/ui/badge";
 import { Loading, EmptyState } from "@/components/ui/feedback";
+import { ImagensProduto } from "@/components/produto-imagens";
 import type { ProdutoDTO, CategoriaDTO, FornecedorDTO } from "@/lib/types";
 
 const VAZIO: Omit<ProdutoDTO, "id" | "stock_atual"> = {
@@ -130,13 +131,15 @@ export function ProdutosClient({
           method: "PUT",
           body: JSON.stringify(form),
         });
+        setModal(false);
       } else {
-        await apiFetch("/api/produtos", {
+        const criado = await apiFetch<{ id: string }>("/api/produtos", {
           method: "POST",
           body: JSON.stringify(form),
         });
+        // Mantém o modal aberto em modo edição para permitir anexar imagens
+        setEditandoId(criado.id);
       }
-      setModal(false);
       carregar();
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Falha ao guardar");
@@ -215,18 +218,30 @@ export function ProdutosClient({
                 key={p.id}
                 className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-2 px-4 py-3 transition-colors hover:bg-zinc-900/50 sm:grid-cols-[1.5fr_1fr_1fr_120px_auto]"
               >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-zinc-100">{p.nome}</p>
-                  {p.codigo_barras && (
-                    <p className="flex items-center gap-1 text-[11px] text-zinc-500">
-                      <Barcode className="h-3 w-3" /> {p.codigo_barras}
-                    </p>
-                  )}
-                  {p.disponivel_online && (
-                    <Badge color="green" className="mt-1">
-                      Online
-                    </Badge>
-                  )}
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
+                    {p.imagem ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.imagem} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <Package className="h-4 w-4 text-zinc-700" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-zinc-100">{p.nome}</p>
+                    {p.codigo_barras && (
+                      <p className="flex items-center gap-1 text-[11px] text-zinc-500">
+                        <Barcode className="h-3 w-3" /> {p.codigo_barras}
+                      </p>
+                    )}
+                    {p.disponivel_online && (
+                      <Badge color="green" className="mt-1">
+                        Online
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <span className="hidden truncate text-sm text-zinc-400 sm:block">
                   {p.categoria ?? "—"}
@@ -279,6 +294,11 @@ export function ProdutosClient({
         size="lg"
       >
         <form onSubmit={salvar} className="space-y-4">
+          {editandoId && !produtos.some((p) => p.id === editandoId) && (
+            <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-400">
+              Produto criado. Já pode anexar as imagens abaixo.
+            </p>
+          )}
           <Field label="Nome *">
             <Input
               required
@@ -372,6 +392,10 @@ export function ProdutosClient({
               onChange={(e) => set("descricao_publica", e.target.value || null)}
               placeholder="Breve descrição mostrada aos clientes"
             />
+          </Field>
+
+          <Field label="Imagens do produto">
+            <ImagensProduto key={editandoId ?? "novo"} produtoId={editandoId} />
           </Field>
 
           <div className="grid gap-4 rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4 sm:grid-cols-2">
