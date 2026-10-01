@@ -185,8 +185,16 @@ export async function DELETE(
     );
   }
 
+  // A linha já foi apagada; se o CDN falhar, devolvemos aviso em vez de 500
+  // para não reverter a BD. O ficheiro órfão é inofensivo, fica apenas storage.
+  let aviso: string | null = null;
   if (cloudinaryConfigurado()) {
-    await destroyImagem(alvo.rows[0].cloudinary_public_id).catch(() => {});
+    try {
+      await destroyImagem(alvo.rows[0].cloudinary_public_id);
+    } catch (e) {
+      console.error("Falha ao apagar imagem no Cloudinary:", e);
+      aviso = "Imagem removida do catálogo, mas não foi possível apagá-la no Cloudinary";
+    }
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, aviso });
 }

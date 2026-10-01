@@ -10,6 +10,7 @@ export function ImagensProduto({ produtoId }: { produtoId: string | null }) {
   const [imagens, setImagens] = useState<ImagemProdutoDTO[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
+  const [aviso, setAviso] = useState("");
 
   useEffect(() => {
     if (!produtoId) return;
@@ -60,12 +61,15 @@ export function ImagensProduto({ produtoId }: { produtoId: string | null }) {
     if (!produtoId) return;
     if (!confirm("Remover esta imagem?")) return;
     setErro("");
+    setAviso("");
     try {
-      await apiFetch(`/api/produtos/${produtoId}/imagens?imagemId=${imagem.id}`, {
-        method: "DELETE",
-      });
-      const dados = await apiFetch<ImagemProdutoDTO[]>(`/api/produtos/${produtoId}/imagens`);
-      setImagens(dados);
+      const dados = await apiFetch<{ ok: boolean; aviso: string | null }>(
+        `/api/produtos/${produtoId}/imagens?imagemId=${imagem.id}`,
+        { method: "DELETE" }
+      );
+      const restantes = await apiFetch<ImagemProdutoDTO[]>(`/api/produtos/${produtoId}/imagens`);
+      setImagens(restantes);
+      setAviso(dados.aviso ?? "");
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha ao remover a imagem");
     }
@@ -109,6 +113,12 @@ export function ImagensProduto({ produtoId }: { produtoId: string | null }) {
       {erro && (
         <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-400">
           {erro}
+        </p>
+      )}
+
+      {aviso && (
+        <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-400">
+          {aviso}
         </p>
       )}
 
