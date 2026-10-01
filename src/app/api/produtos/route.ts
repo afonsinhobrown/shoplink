@@ -84,7 +84,7 @@ export async function POST(req: Request) {
        RETURNING id`,
       [
         r.sessao.lojaId, categoria_id ?? null, fornecedor_id ?? null,
-        nome.trim(), codigo_barras ?? null, sku_interno ?? null,
+        nome.trim(), codigo_barras || null, sku_interno || null,
         tipo_venda, unidade_medida, Number(preco_custo) || 0, Number(preco_venda) || 0,
         controla_stock, Number(stock_minimo) || 0,
         disponivel_online ?? false, descricao_publica ?? null, isento_imposto ?? false,

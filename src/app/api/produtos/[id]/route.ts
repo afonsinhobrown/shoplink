@@ -48,7 +48,7 @@ export async function PUT(
            disponivel_online = $13, descricao_publica = $14, isento_imposto = $15
          WHERE id = $16 RETURNING id`,
         [
-          nome?.trim(), codigo_barras ?? null, sku_interno ?? null,
+          nome?.trim(), codigo_barras || null, sku_interno || null,
           categoria_id ?? null, fornecedor_id ?? null,
           tipo_venda ?? "unidade", unidade_medida ?? "un",
           Number(preco_custo) || 0, Number(preco_venda) || 0,
