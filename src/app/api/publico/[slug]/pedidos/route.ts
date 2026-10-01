@@ -259,7 +259,7 @@ export async function POST(
           });
         }
         if (chargeStatus === "failed") {
-          const motivo = charge.failedReason || charge.responseDesc || "cobrança recusada.";
+          const motivo = "cobrança recusada.";
           await pool.query(
             `UPDATE pedido_online SET status_pagamento = 'falhou', data_atualizacao = now() WHERE id = $1`,
             [pedidoId]
