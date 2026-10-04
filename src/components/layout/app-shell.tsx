@@ -24,6 +24,7 @@ import {
   Plus,
   Minus,
   ShieldAlert,
+  Store,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { rotuloTipoLoja } from "@/lib/format";
