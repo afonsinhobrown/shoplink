@@ -10,8 +10,8 @@ export default async function EntregasNovaRedirect({
   const lat = params.lat;
   const lng = params.lng;
 
-  const deliverySystemBase = process.env.NEXT_PUBLIC_DELIVERY_SYSTEM_URL || "https://entregas.tecnoincubadora.com";
-  const url = `${deliverySystemBase}/entregadores/solicitar?entregadorId=${entregador}&lat=${lat}&lng=${lng}`;
+  const deliverySystemBase = process.env.NEXT_PUBLIC_DELIVERY_SYSTEM_URL || "https://entregasmoz.vercel.app";
+  const url = `${deliverySystemBase}/entregadores/solicitar?entregadorId=${entregador}`;
 
   return (
     <html>
