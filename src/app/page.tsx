@@ -90,7 +90,7 @@ const INCLUIDO = [
 const BOT_WHATSAPP =
   "https://wa.me/258861390985?text=" +
   encodeURIComponent(
-    "Olá! Quero saber mais sobre a configuração de bot para WhatsApp."
+    "QUERO SABER MAIS DOS VOSSOS SERVIÇOS"
   );
 
 const VANTAGENS_BOT = [
@@ -164,6 +164,16 @@ export default async function LandingPage() {
             </a>
           </nav>
           <div className="flex items-center gap-2">
+            {/* Botão WhatsApp no header */}
+            <a
+              href={BOT_WHATSAPP}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition text-sm font-medium"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>Fale connosco</span>
+            </a>
             {sessao ? (
               <Link href="/dashboard">
                 <Button size="sm">

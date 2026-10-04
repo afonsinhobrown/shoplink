@@ -25,6 +25,7 @@ import {
   Minus,
   ShieldAlert,
   Store,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { rotuloTipoLoja } from "@/lib/format";
@@ -212,6 +213,16 @@ export function AppShell({
           <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-zinc-800/80 bg-zinc-950/80 px-4 backdrop-blur-xl sm:px-6 print:hidden">
             <div className="flex items-center gap-3 lg:hidden">
               <Logo />
+              <a
+                href="https://wa.me/258861390985?text=QUERO%20SABER%20MAIS%20DOS%20VOSSOS%20SERVI%C3%87OS"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-green-500/30 bg-green-500/10 text-green-400 transition-colors hover:bg-green-500/20 hover:text-green-300"
+                aria-label="Fale connosco no WhatsApp"
+                title="Fale connosco"
+              >
+                <MessageCircle className="h-5 w-5" />
+              </a>
             </div>
             <div className="hidden items-center gap-2 lg:flex">
               <div className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -221,6 +232,16 @@ export function AppShell({
               </span>
             </div>
             <div className="flex items-center gap-2">
+              <a
+                href="https://wa.me/258861390985?text=QUERO%20SABER%20MAIS%20DOS%20VOSSOS%20SERVI%C3%87OS"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-green-500/30 bg-green-500/10 text-green-400 transition-colors hover:bg-green-500/20 hover:text-green-300"
+                aria-label="Fale connosco no WhatsApp"
+                title="Fale connosco"
+              >
+                <MessageCircle className="h-5 w-5" />
+              </a>
               <ThemeToggle />
               <button
                 onClick={logout}
