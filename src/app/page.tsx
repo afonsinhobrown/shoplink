@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicidadeCarousel } from "@/components/landing/publicidade-carousel";
+import { EntregadoresPanel } from "@/components/landing/entregadores-panel";
 import { getSessao } from "@/lib/auth";
 import { getLojasOnline } from "@/lib/queries";
 
@@ -363,6 +364,9 @@ export default async function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Painel de Entregadores Parceiros */}
+      <EntregadoresPanel />
 
       {/* Funcionalidades */}
       <section id="funcionalidades" className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
