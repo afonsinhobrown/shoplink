@@ -37,6 +37,10 @@ const VAZIO: Omit<ProdutoDTO, "id" | "stock_atual"> = {
   descricao_publica: null,
   isento_imposto: false,
   link_externo: null,
+  sob_encomenda: false,
+  mostrar_botao_pagamento: true,
+  mostrar_botao_whatsapp: false,
+  whatsapp_numero: null,
 };
 
 export function ProdutosClient({
@@ -118,6 +122,10 @@ export function ProdutosClient({
       descricao_publica: p.descricao_publica ?? null,
       isento_imposto: p.isento_imposto ?? false,
       link_externo: p.link_externo ?? null,
+      sob_encomenda: p.sob_encomenda ?? false,
+      mostrar_botao_pagamento: p.mostrar_botao_pagamento ?? true,
+      mostrar_botao_whatsapp: p.mostrar_botao_whatsapp ?? false,
+      whatsapp_numero: p.whatsapp_numero ?? null,
     });
     setErro("");
     setModal(true);
@@ -404,6 +412,50 @@ export function ProdutosClient({
               placeholder="https://exemplo.com/comprar"
             />
           </Field>
+
+          <div className="grid gap-4 rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4 sm:grid-cols-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-zinc-200">Sob encomenda</p>
+                <p className="text-xs text-zinc-500">Cliente negocia via WhatsApp, não paga online</p>
+              </div>
+              <Switch
+                checked={form.sob_encomenda ?? false}
+                onChange={(v) => set("sob_encomenda", v)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-zinc-200">Mostrar botão de pagamento</p>
+                <p className="text-xs text-zinc-500">Botão \"Adicionar\" / \"Comprar\" no carrinho</p>
+              </div>
+              <Switch
+                checked={form.mostrar_botao_pagamento ?? true}
+                onChange={(v) => set("mostrar_botao_pagamento", v)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-zinc-200">Mostrar botão WhatsApp</p>
+                <p className="text-xs text-zinc-500">Botão para negociar via WhatsApp</p>
+              </div>
+              <Switch
+                checked={form.mostrar_botao_whatsapp ?? false}
+                onChange={(v) => set("mostrar_botao_whatsapp", v)}
+              />
+            </div>
+          </div>
+
+          {form.mostrar_botao_whatsapp && (
+            <Field label="Número WhatsApp (opcional, usa o da loja se vazio)">
+              <Input
+                type="tel"
+                value={form.whatsapp_numero ?? ""}
+                onChange={(e) => set("whatsapp_numero", e.target.value || null)}
+                placeholder="+258 84 000 0000"
+              />
+            </Field>
+          )}
 
           <Field label="Imagens do produto">
             <ImagensProduto key={editandoId ?? "novo"} produtoId={editandoId} />

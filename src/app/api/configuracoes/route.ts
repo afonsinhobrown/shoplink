@@ -6,17 +6,18 @@ export async function GET() {
   const r = await apiPapel("dono", "gestor");
   if (r.response) return r.response;
 
-  const loja = await pool.query(
+const loja = await pool.query(
     `SELECT l.id, l.nome, l.tipo_loja, l.provincia, l.cidade, l.endereco, l.moeda,
             l.modo_pos, l.permite_venda_granel, l.permite_venda_fiado,
             l.controla_lote_validade, l.stock_minimo_ativo,
             l.permite_venda_online, l.permite_reserva, l.slug_publico,
             l.tempo_expiracao_reserva_horas, l.tempo_inatividade,
+            l.whatsapp_numero,
             t.nome AS empresa, t.email AS email_empresa, t.telefone, t.nuit, t.plano
      FROM loja l JOIN tenant t ON t.id = l.tenant_id
      WHERE l.id = $1`,
-    [r.sessao.lojaId]
-  );
+   [r.sessao.lojaId]
+ );
 
   const utilizadores = await pool.query(
     `SELECT ul.utilizador_id AS id, ul.papel, u.nome, u.email, u.ativo
@@ -36,7 +37,7 @@ export async function PUT(req: Request) {
       nome, cidade, provincia, endereco, modo_pos, permite_venda_granel, permite_venda_fiado,
       controla_lote_validade, stock_minimo_ativo,
       permite_venda_online, permite_reserva, slug_publico, tempo_expiracao_reserva_horas,
-      imposto_padrao, logotipo_url, tempo_inatividade
+      imposto_padrao, logotipo_url, tempo_inatividade, whatsapp_numero
     } = body;
   
     const slugify = (v: unknown) =>
@@ -61,8 +62,8 @@ export async function PUT(req: Request) {
            controla_lote_validade = $8, stock_minimo_ativo = $9,
            permite_venda_online = $10, permite_reserva = $11, slug_publico = $12,
            tempo_expiracao_reserva_horas = $13, imposto_padrao = $14, logotipo_url = $15,
-           tempo_inatividade = $16
-         WHERE id = $17`,
+           tempo_inatividade = $16, whatsapp_numero = $17
+         WHERE id = $18`,
         [
           nome, cidade ?? null, provincia ?? null, endereco ?? null,
           modo_pos ?? "rapido",
@@ -71,7 +72,7 @@ export async function PUT(req: Request) {
           permite_venda_online ?? false, permite_reserva ?? false, slug,
           Number(tempo_expiracao_reserva_horas) || 24,
           Number(imposto_padrao) || 0, logotipo_url ?? null,
-          Number(tempo_inatividade) || 60,
+          Number(tempo_inatividade) || 60, whatsapp_numero ?? null,
           r.sessao.lojaId,
         ]
       );

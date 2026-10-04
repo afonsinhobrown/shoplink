@@ -36,6 +36,10 @@ export async function PUT(
       descricao_publica,
       isento_imposto,
       link_externo,
+      sob_encomenda,
+      mostrar_botao_pagamento,
+      mostrar_botao_whatsapp,
+      whatsapp_numero,
     } = body;
   
     try {
@@ -46,8 +50,9 @@ export async function PUT(
            tipo_venda = $6, unidade_medida = $7,
            preco_custo = $8, preco_venda = $9,
            controla_stock = $10, stock_minimo = $11, ativo = $12,
-           disponivel_online = $13, descricao_publica = $14, isento_imposto = $15, link_externo = $16
-         WHERE id = $17 RETURNING id`,
+           disponivel_online = $13, descricao_publica = $14, isento_imposto = $15, link_externo = $16,
+           sob_encomenda = $17, mostrar_botao_pagamento = $18, mostrar_botao_whatsapp = $19, whatsapp_numero = $20
+         WHERE id = $21 RETURNING id`,
         [
           nome?.trim(), codigo_barras || null, sku_interno || null,
           categoria_id ?? null, fornecedor_id ?? null,
@@ -56,6 +61,7 @@ export async function PUT(
           controla_stock ?? true, Number(stock_minimo) || 0,
           ativo ?? true,
           disponivel_online ?? false, descricao_publica ?? null, isento_imposto ?? false, link_externo ?? null,
+          sob_encomenda ?? false, mostrar_botao_pagamento ?? true, mostrar_botao_whatsapp ?? false, whatsapp_numero ?? null,
           id,
         ]
       );

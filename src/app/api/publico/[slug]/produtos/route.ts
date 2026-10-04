@@ -8,13 +8,14 @@ export async function GET(
 ) {
   const { slug } = await params;
 
-  const lojaR = await pool.query(
+const lojaR = await pool.query(
     `SELECT id, nome, tipo_loja, cidade, provincia, endereco, moeda,
             permite_venda_online, permite_reserva, tempo_expiracao_reserva_horas,
+            whatsapp_numero,
             (SELECT id FROM tenant t WHERE t.id = loja.tenant_id) AS tenant_id
      FROM loja
      WHERE slug_publico = $1 AND ativo = true`,
-    [slug]
+   [slug]
   );
   const loja = lojaR.rows[0] ?? null;
   if (!loja) {
@@ -29,6 +30,7 @@ export async function GET(
 
   const produtos = await pool.query(
     `SELECT p.id, p.nome, p.descricao_publica, p.preco_venda, p.unidade_medida, p.link_externo,
+            p.sob_encomenda, p.mostrar_botao_pagamento, p.mostrar_botao_whatsapp, p.whatsapp_numero,
             p.categoria_id, c.nome AS categoria,
             pi.url_thumbnail, pi.url AS imagem,
             COALESCE(v.quantidade_disponivel, 0) AS quantidade_disponivel
@@ -56,6 +58,7 @@ export async function GET(
       permite_reserva: loja.permite_reserva,
       permite_venda_online: loja.permite_venda_online,
       tempo_expiracao_reserva_horas: loja.tempo_expiracao_reserva_horas,
+      whatsapp_numero: loja.whatsapp_numero,
     },
     produtos: produtos.rows,
   });

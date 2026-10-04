@@ -26,6 +26,10 @@ export interface ProdutoDTO {
   isento_imposto?: boolean;
   imagem?: string | null;
   link_externo?: string | null;
+  sob_encomenda?: boolean;
+  mostrar_botao_pagamento?: boolean;
+  mostrar_botao_whatsapp?: boolean;
+  whatsapp_numero?: string | null;
 }
 
 export interface ImagemProdutoDTO {
@@ -42,6 +46,24 @@ export interface CategoriaDTO {
   nome: string;
   ordem: number;
   produtos: number;
+}
+
+export interface LojaDTO {
+  id: string;
+  nome: string;
+  tipo_loja: string;
+  cidade?: string | null;
+  provincia?: string | null;
+  endereco?: string | null;
+  moeda: string;
+  permite_venda_online: boolean;
+  permite_reserva: boolean;
+  slug_publico?: string | null;
+  telefone?: string | null;
+  whatsapp_numero?: string | null;
+  logotipo_url?: string | null;
+  imposto_padrao?: number;
+  moeda_simbolo?: string;
 }
 
 export interface FornecedorDTO {

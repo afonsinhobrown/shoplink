@@ -6,6 +6,7 @@ import {
   CreditCard,
   Loader2,
   MapPin,
+  MessageCircle,
   Minus,
   Plus,
   ShieldCheck,
@@ -80,12 +81,21 @@ export function LojaClient({
     return s;
   }, [carrinho, produtos]);
 
-  // Licenças/SaaS não entram no carrinho: são compradas na página externa
-  // (gestionada por outro sistema) através do link externo do produto.
+  // Produtos sob encomenda ou sem botão de pagamento não entram no carrinho
   const add = (p: ProdutoPublico) => {
+    if (p.sob_encomenda || !p.mostrar_botao_pagamento) return;
     if (p.link_externo) return;
     if (qtd(p.id) >= p.quantidade_disponivel) return;
     setCarrinho((c) => ({ ...c, [p.id]: (c[p.id] ?? 0) + 1 }));
+  };
+
+  // Helper para gerar link do WhatsApp
+  const getWhatsAppHref = (produto: ProdutoPublico) => {
+    const whatsappNum = produto.whatsapp_numero || loja.whatsapp_numero;
+    if (!whatsappNum) return null;
+    const cleanNum = whatsappNum.replace(/\D/g, "");
+    const msg = encodeURIComponent(`Olá, tenho interesse no produto "${produto.nome}" (${formatarMoeda(produto.preco_venda, loja.moeda)}). Gostaria de mais informações.`);
+    return `https://wa.me/${cleanNum}?text=${msg}`;
   };
   const menos = (id: string) =>
     setCarrinho((c) => {
@@ -501,32 +511,79 @@ export function LojaClient({
                         {formatarMoeda(p.preco_venda, loja.moeda)}
                       </p>
                       {disp > 0 && disp <= 5 && qtd(p.id) < disp && (
-                        <Badge color="amber" className="mt-1">
-                          Sobram {disp}
-                        </Badge>
-                      )}
-                    </div>
-                    {p.link_externo ? (
-                      <a
-                        href={p.link_externo}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Comprar ${p.nome} na página oficial`}
-                      >
-                        <Button size="sm" variant="primary">
-                          Comprar
-                        </Button>
-                      </a>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant={qtd(p.id) > 0 ? "secondary" : "primary"}
-                        disabled={foraDeStock}
-                        onClick={() => add(p)}
-                      >
-                        {qtd(p.id) > 0 ? `+${qtd(p.id)}` : "Adicionar"}
-                      </Button>
+                      <Badge color="amber" className="mt-1">
+                        Sobram {disp}
+                      </Badge>
                     )}
+                    {p.sob_encomenda && (
+                      <Badge color="blue" className="mt-1">
+                        Sob encomenda
+                      </Badge>
+                    )}
+                    {p.link_externo && !p.sob_encomenda && (
+                      <Badge color="violet" className="mt-1">
+                        Link externo
+                      </Badge>
+                    )}
+                      <div>
+                        <p className="text-base font-semibold text-emerald-400">
+                          {formatarMoeda(p.preco_venda, loja.moeda)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {/* Botão WhatsApp */}
+                        {(p.mostrar_botao_whatsapp || p.sob_encomenda) && (() => {
+                          const href = getWhatsAppHref(p);
+                          if (!href) return null;
+                          return (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={`Conversar no WhatsApp sobre ${p.nome}`}
+                            >
+                              <Button size="sm" variant="outline" className="gap-1.5 bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20">
+                                <MessageCircle className="h-4 w-4" />
+                                WhatsApp
+                              </Button>
+                            </a>
+                          );
+                        })()}
+                        
+                        {/* Botão pagamento / carrinho */}
+                        {p.mostrar_botao_pagamento && !p.sob_encomenda && !p.link_externo && (
+                          <Button
+                            size="sm"
+                            variant={qtd(p.id) > 0 ? "secondary" : "primary"}
+                            disabled={foraDeStock}
+                            onClick={() => add(p)}
+                          >
+                            {qtd(p.id) > 0 ? `+${qtd(p.id)}` : "Adicionar"}
+                          </Button>
+                        )}
+
+                        {/* Link externo (licenças) */}
+                        {p.link_externo && !p.sob_encomenda && !p.mostrar_botao_pagamento && (
+                          <a
+                            href={p.link_externo}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Comprar ${p.nome} na página oficial`}
+                          >
+                            <Button size="sm" variant="primary">
+                              Comprar
+                            </Button>
+                          </a>
+                        )}
+
+                        {/* Indisponível / apenas WhatsApp */}
+                        {!p.mostrar_botao_pagamento && p.sob_encomenda && !p.mostrar_botao_whatsapp && !p.link_externo && (
+                          <Button size="sm" variant="ghost" disabled>
+                            Indisponível
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </article>

@@ -14,6 +14,7 @@ export interface LojaPublica {
   permite_reserva: boolean;
   permite_venda_online: boolean;
   tempo_expiracao_reserva_horas: number;
+  whatsapp_numero?: string | null;
 }
 
 export interface ProdutoPublico {
@@ -27,6 +28,10 @@ export interface ProdutoPublico {
   imagem: string | null;
   quantidade_disponivel: number;
   link_externo?: string | null;
+  sob_encomenda?: boolean;
+  mostrar_botao_pagamento?: boolean;
+  mostrar_botao_whatsapp?: boolean;
+  whatsapp_numero?: string | null;
 }
 
 export default async function LojaPage({
@@ -38,7 +43,8 @@ export default async function LojaPage({
 
   const lojaR = await pool.query(
     `SELECT id, nome, tipo_loja, cidade, provincia, endereco, moeda,
-            permite_venda_online, permite_reserva, tempo_expiracao_reserva_horas
+            permite_venda_online, permite_reserva, tempo_expiracao_reserva_horas,
+            whatsapp_numero
      FROM loja WHERE slug_publico = $1 AND ativo = true`,
     [slug]
   );
@@ -60,6 +66,7 @@ export default async function LojaPage({
 
   const produtosR = await pool.query(
     `SELECT p.id, p.nome, p.descricao_publica, p.preco_venda, p.unidade_medida, p.link_externo,
+            p.sob_encomenda, p.mostrar_botao_pagamento, p.mostrar_botao_whatsapp, p.whatsapp_numero,
             c.nome AS categoria, pi.url_thumbnail, pi.url AS imagem,
             COALESCE(v.quantidade_disponivel, 0) AS quantidade_disponivel
      FROM produto p
@@ -85,6 +92,7 @@ export default async function LojaPage({
     permite_reserva: loja.permite_reserva,
     permite_venda_online: loja.permite_venda_online,
     tempo_expiracao_reserva_horas: loja.tempo_expiracao_reserva_horas,
+    whatsapp_numero: loja.whatsapp_numero,
   };
 
   const produtos: ProdutoPublico[] = produtosR.rows.map((p) => ({

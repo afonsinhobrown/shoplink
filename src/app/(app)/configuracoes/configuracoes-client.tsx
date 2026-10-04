@@ -13,8 +13,8 @@ interface LojaConfig {
   id: string;
   nome: string;
   tipo_loja: string;
-  provincia: string | null;
   cidade: string | null;
+  provincia: string | null;
   endereco: string | null;
   moeda: string;
   modo_pos: string;
@@ -25,6 +25,7 @@ interface LojaConfig {
   empresa: string;
   email_empresa: string | null;
   telefone: string | null;
+  whatsapp_numero: string | null;
   nuit: string | null;
   plano: string;
   imposto_padrao: number;
@@ -118,6 +119,14 @@ export function ConfiguracoesClient({ ehDono }: { ehDono: boolean }) {
             </Field>
             <Field label="Telefone">
               <Input value={form.telefone ?? ""} disabled />
+            </Field>
+            <Field label="WhatsApp (para botão de encomenda)">
+              <Input
+                type="tel"
+                value={form.whatsapp_numero ?? ""}
+                onChange={(e) => setForm({ ...form, whatsapp_numero: e.target.value || null })}
+                placeholder="+258 84 000 0000"
+              />
             </Field>
             <Field label="NUIT">
               <Input value={form.nuit ?? ""} disabled />
