@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { pool } from "@/lib/db";
 import { criarSessao } from "@/lib/auth";
 import { DIAS_TRIAL } from "@/lib/licenca";
+import { syncStoreToDelivery } from "@/lib/delivery-sync";
 
 const CATEGORIAS_DEFAULT = [
   "Bebidas",
@@ -108,6 +109,16 @@ export async function POST(req: Request) {
       nome: donoNome,
       modoPos: loja.rows[0].modo_pos,
     });
+
+    // Sincronizar com base de dados de entregas (fire-and-forget)
+    syncStoreToDelivery({
+      id: lojaId,
+      nome: loja.rows[0].nome,
+      slugPublico: loja.rows[0].nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+      cidade: cidade ?? null,
+      endereco: null,
+      tenantEmail: email,
+    }).catch(() => {});
 
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (e) {
