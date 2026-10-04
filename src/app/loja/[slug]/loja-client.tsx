@@ -13,7 +13,9 @@ import {
   Smartphone,
   Store,
   X,
+  Home,
 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
@@ -611,7 +613,15 @@ function Shell({ loja, children }: { loja: LojaPublica; children: React.ReactNod
               </p>
             </div>
           </div>
-          <Badge color="green">Loja online</Badge>
+          <div className="flex items-center gap-3">
+            <Badge color="green" className="hidden sm:inline-flex">Loja online</Badge>
+            <Link href="/">
+              <Button variant="outline" size="sm" className="h-8 gap-1.5 px-2.5 text-xs text-zinc-300">
+                <Home className="h-3.5 w-3.5" />
+                <span>ShopLink</span>
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 pb-24 pt-4">{children}</main>
