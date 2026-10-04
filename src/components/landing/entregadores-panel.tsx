@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import type * as Leaflet from "leaflet";
 
 interface Entregador {
   id: string;
@@ -67,7 +67,7 @@ const VEHICLE_ICON: Record<string, string> = {
 
 const DEFAULT_CENTER = { lat: -25.9653, lng: 32.5892, zoom: 6 }; // Maputo
 
-function createVehicleMarker(vehicleType: string) {
+function createVehicleMarker(L: typeof Leaflet, vehicleType: string) {
   const emoji = VEHICLE_ICON[vehicleType] || "🚚";
   return L.divIcon({
     className: "vehicle-marker",
@@ -77,7 +77,7 @@ function createVehicleMarker(vehicleType: string) {
   });
 }
 
-function createSelectedMarker() {
+function createSelectedMarker(L: typeof Leaflet) {
   return L.divIcon({
     className: "selected-marker",
     html: `<div style="font-size:36px;filter:drop-shadow(0 2px 6px rgba(16,185,129,0.6));">📍</div>`,
@@ -117,61 +117,69 @@ export function EntregadoresPanel() {
 
   // Initialize / update map
   useEffect(() => {
-    if (!mapRef.current) return;
+    let cancelado = false;
 
-    const center = entregadorSelecionado
-      ? { lat: entregadorSelecionado.currentLatitude, lng: entregadorSelecionado.currentLongitude, zoom: 14 }
-      : cidadeSelecionada && CITY_COORDS[cidadeSelecionada]
-        ? { ...CITY_COORDS[cidadeSelecionada], zoom: 12 }
-        : DEFAULT_CENTER;
+    async function setupMapa() {
+      if (!mapRef.current) return;
+      const L = (await import("leaflet")).default;
+      if (cancelado || !mapRef.current) return;
 
-    if (!mapInstance.current) {
-      mapInstance.current = L.map(mapRef.current, {
-        center: [center.lat, center.lng],
-        zoom: center.zoom,
-        zoomControl: true,
-        attributionControl: true,
+      const center = entregadorSelecionado
+        ? { lat: entregadorSelecionado.currentLatitude, lng: entregadorSelecionado.currentLongitude, zoom: 14 }
+        : cidadeSelecionada && CITY_COORDS[cidadeSelecionada]
+          ? { ...CITY_COORDS[cidadeSelecionada], zoom: 12 }
+          : DEFAULT_CENTER;
+
+      if (!mapInstance.current) {
+        mapInstance.current = L.map(mapRef.current, {
+          center: [center.lat, center.lng],
+          zoom: center.zoom,
+          zoomControl: true,
+          attributionControl: true,
+        });
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        }).addTo(mapInstance.current);
+      } else {
+        mapInstance.current.setView([center.lat, center.lng], center.zoom);
+      }
+
+      // Clear old markers
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current.clear();
+
+      // Add markers for each entregador
+      entregadores.forEach((e) => {
+        const marker = L.marker([e.currentLatitude, e.currentLongitude], {
+          icon: createVehicleMarker(L, e.vehicleType),
+        })
+          .bindPopup(
+            `<div style="min-width:180px;">
+              <strong>${e.name}</strong><br/>
+              ${VEHICLE_LABEL[e.vehicleType] || e.vehicleType} — ${e.vehicleColor} (${e.plateNumber})<br/>
+              ⭐ ${e.rating.toFixed(1)}<br/>
+              <button onclick="window.dispatchEvent(new CustomEvent('select-entregador',{detail:'${e.id}'}))"
+                style="margin-top:8px;padding:4px 10px;background:#10b981;color:white;border:none;border-radius:4px;cursor:pointer;">
+                Selecionar
+              </button>
+            </div>`
+          )
+          .addTo(mapInstance.current!);
+        markersRef.current.set(e.id, marker);
       });
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      }).addTo(mapInstance.current);
-    } else {
-      mapInstance.current.setView([center.lat, center.lng], center.zoom);
-    }
 
-    // Clear old markers
-    markersRef.current.forEach((m) => m.remove());
-    markersRef.current.clear();
-
-    // Add markers for each entregador
-    entregadores.forEach((e) => {
-      const marker = L.marker([e.currentLatitude, e.currentLongitude], {
-        icon: createVehicleMarker(e.vehicleType),
-      })
-        .bindPopup(
-          `<div style="min-width:180px;">
-            <strong>${e.name}</strong><br/>
-            ${VEHICLE_LABEL[e.vehicleType] || e.vehicleType} — ${e.vehicleColor} (${e.plateNumber})<br/>
-            ⭐ ${e.rating.toFixed(1)}<br/>
-            <button onclick="window.dispatchEvent(new CustomEvent('select-entregador',{detail:'${e.id}'}))" 
-              style="margin-top:8px;padding:4px 10px;background:#10b981;color:white;border:none;border-radius:4px;cursor:pointer;">
-              Selecionar
-            </button>
-          </div>`
-        )
-        .addTo(mapInstance.current!);
-      markersRef.current.set(e.id, marker);
-    });
-
-    // Highlight selected
-    if (entregadorSelecionado) {
-      const m = markersRef.current.get(entregadorSelecionado.id);
-      if (m) {
-        m.setIcon(createSelectedMarker());
-        m.openPopup();
+      // Highlight selected
+      if (entregadorSelecionado) {
+        const m = markersRef.current.get(entregadorSelecionado.id);
+        if (m) {
+          m.setIcon(createSelectedMarker(L));
+          m.openPopup();
+        }
       }
     }
+
+    setupMapa();
 
     // Listen for popup button clicks
     const handler = (ev: CustomEvent<string>) => {
@@ -180,7 +188,10 @@ export function EntregadoresPanel() {
       if (e) setEntregadorSelecionado(e);
     };
     window.addEventListener("select-entregador", handler as EventListener);
-    return () => window.removeEventListener("select-entregador", handler as EventListener);
+    return () => {
+      cancelado = true;
+      window.removeEventListener("select-entregador", handler as EventListener);
+    };
   }, [entregadores, entregadorSelecionado, cidadeSelecionada]);
 
   const handleSelecionarEntregador = (e: Entregador) => {
