@@ -243,7 +243,7 @@ export async function POST(
     if (isCompra && metodo !== "na_loja") {
       const reference = buildPaymentReference();
       const base = appBaseUrl(req);
-      const returnUrl = `${base}/loja/${slug}/pedido/${numeroPedido}?pg=1`;
+      const returnUrl = `${base}/loja/${slug}/pedido/${numeroPedido}/recibo`;
       const webhookUrl = `${base}/api/webhooks/paysuite`;
 
       // A PaySuite não aceita telefone no corpo do pedido: para M-Pesa/e-Mola
