@@ -39,16 +39,19 @@ export async function PUT(req: Request) {
       imposto_padrao, logotipo_url, tempo_inatividade
     } = body;
   
-    let slug = null;
-    if (slug_publico != null) {
-      slug =
-        String(slug_publico)
-          .trim()
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "") || null;
+    const slugify = (v: unknown) =>
+      String(v ?? "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") || null;
+
+    let slug: string | null = slugify(slug_publico);
+    // Loja online sem endereco -> gerar a partir do nome (evita links /loja/null)
+    if (!slug && permite_venda_online) {
+      slug = slugify(nome);
     }
   
     try {

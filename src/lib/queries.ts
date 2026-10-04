@@ -88,6 +88,7 @@ export async function getLojasOnline() {
     `SELECT id, nome, slug_publico, cidade, tipo_loja 
      FROM loja 
      WHERE permite_venda_online = true AND ativo = true
+       AND slug_publico IS NOT NULL AND slug_publico <> ''
      ORDER BY nome ASC`
   );
   return r.rows;
