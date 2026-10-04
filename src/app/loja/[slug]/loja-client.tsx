@@ -80,7 +80,10 @@ export function LojaClient({
     return s;
   }, [carrinho, produtos]);
 
+  // Licenças/SaaS não entram no carrinho: são compradas na página externa
+  // (gestionada por outro sistema) através do link externo do produto.
   const add = (p: ProdutoPublico) => {
+    if (p.link_externo) return;
     if (qtd(p.id) >= p.quantidade_disponivel) return;
     setCarrinho((c) => ({ ...c, [p.id]: (c[p.id] ?? 0) + 1 }));
   };
@@ -503,8 +506,13 @@ export function LojaClient({
                         </Badge>
                       )}
                     </div>
-                    {p.categoria === "Licenças SaaS TECNOINCUBADORA" ? (
-                      <a href={p.link_externo || "#"} target="_blank" rel="noopener noreferrer">
+                    {p.link_externo ? (
+                      <a
+                        href={p.link_externo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Comprar ${p.nome} na página oficial`}
+                      >
                         <Button size="sm" variant="primary">
                           Comprar
                         </Button>

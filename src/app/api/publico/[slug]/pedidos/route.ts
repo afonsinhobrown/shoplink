@@ -142,7 +142,7 @@ export async function POST(
       }
       // Bloqueia a linha do produto para serializar a reserva de stock
       const prod = await client.query(
-        `SELECT id, nome, preco_venda, controla_stock FROM produto
+        `SELECT id, nome, preco_venda, controla_stock, link_externo FROM produto
          WHERE id = $1 AND loja_id = $2 AND ativo = true AND disponivel_online = true
          FOR UPDATE`,
         [item.produto_id, L.id]
@@ -151,6 +151,11 @@ export async function POST(
         throw new ApiError("Produto não encontrado ou indisponível online.");
       }
       const p = prod.rows[0];
+
+      // Licenças/SaaS são compradas na página externa, nunca no carrinho.
+      if (p.link_externo) {
+        throw new ApiError(`"${p.nome}" é uma licença e não pode ser encomendado aqui.`);
+      }
 
       if (p.controla_stock) {
         const atual = await client.query(
