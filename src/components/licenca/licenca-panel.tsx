@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSearchParams } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,

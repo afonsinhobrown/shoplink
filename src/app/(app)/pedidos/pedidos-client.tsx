@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSearchParams } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { CalendarClock, CheckCircle2, CreditCard, Loader2, RefreshCw, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
