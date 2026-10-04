@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSearchParams } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -23,7 +24,7 @@ import { formatarMoeda, formatarData, formatarDataHora } from "@/lib/format";
 
 interface Pagamento {
   id: string;
-  metodo: "bci" | "bim" | "manual";
+  metodo: "bci" | "bim" | "manual" | "paysuite" | "mpesa" | "emola" | "credit_card" | "card";
   valor: number;
   status: string;
   referencia_pagamento: string | null;
@@ -86,6 +87,9 @@ export function LicencaPanel({ papel = "dono" }: { papel?: string }) {
   const [aAcao, setAAcao] = useState<string | null>(null);
   const [recibo, setRecibo] = useState<Pagamento | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [verificandoPagamento, setVerificandoPagamento] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const carregar = useCallback(async () => {
     setErro(null);
@@ -103,31 +107,41 @@ export function LicencaPanel({ papel = "dono" }: { papel?: string }) {
     carregar();
   }, [carregar]);
 
-  // Ao voltar do checkout da PaySuite o webhook pode ainda não ter chegado,
-  // por isso confirmamos directamente com a PaySuite.
+  // Só reconcilia ao voltar do checkout (pagamento_id na URL)
   useEffect(() => {
+    const pagamentoId = searchParams.get("pagamento_id");
+    if (!pagamentoId) return;
+
     let cancelado = false;
+    setVerificandoPagamento(true);
+
     (async () => {
       try {
         const res = await fetch("/api/licenca/pagar");
         if (!res.ok) return;
         const data = await res.json();
-        if (cancelado || !data.status) return;
+        if (cancelado) return;
+
         if (data.status === "pago") {
           setAviso("Pagamento confirmado: " + (data.recibo ?? ""));
           await carregar();
+          router.replace("/licenca"); // limpa a URL
         } else if (data.status === "falhou") {
-          setAviso("O pagamento anterior não foi concluído. Pode tentar novamente.");
+          setAviso("O pagamento não foi concluído. Pode tentar novamente.");
           await carregar();
+          router.replace("/licenca");
+        } else if (data.status === "pendente") {
+          setAviso("Ainda a processar. Verifique o meio de pagamento e tente novamente em instantes.");
         }
       } catch {
         // sem reconcileio, o webhook continua a ser a fonte de verdade
+      } finally {
+        if (!cancelado) setVerificandoPagamento(false);
       }
     })();
-    return () => {
-      cancelado = true;
-    };
-  }, [carregar]);
+
+    return () => { cancelado = true; };
+  }, [searchParams, carregar, router]);
 
   async function pagar() {
     setAPagar("paysuite");
@@ -264,6 +278,11 @@ table{width:100%;border-collapse:collapse;margin-top:16px}th,td{text-align:left;
     <div className="animate-fade-in space-y-6">
       {erro && <Alert tone="error">{erro}</Alert>}
       {aviso && <Alert tone="success">{aviso}</Alert>}
+      {verificandoPagamento && (
+        <Alert tone="info">
+          <Loader2 className="h-4 w-4 animate-spin mr-2" /> A verificar pagamento…
+        </Alert>
+      )}
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -347,7 +366,7 @@ table{width:100%;border-collapse:collapse;margin-top:16px}th,td{text-align:left;
               <Button
                 variant="secondary"
                 size="lg"
-                disabled={aPagar !== null}
+                disabled={aPagar !== null || verificandoPagamento}
                 onClick={() => pagar()}
                 className="justify-start"
               >

@@ -82,3 +82,13 @@ export async function getDashboard(sessao: Sessao) {
     vendas7Dias: vendas7D.rows,
   };
 }
+
+export async function getLojasOnline() {
+  const r = await pool.query(
+    `SELECT id, nome, slug_publico, cidade, tipo_loja 
+     FROM loja 
+     WHERE permite_venda_online = true AND ativo = true
+     ORDER BY nome ASC`
+  );
+  return r.rows;
+}

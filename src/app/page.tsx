@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSessao } from "@/lib/auth";
+import { getLojasOnline } from "@/lib/queries";
 
 const FUNCIONALIDADES = [
   {
@@ -104,6 +105,7 @@ const VANTAGENS_BOT = [
 
 export default async function LandingPage() {
   const sessao = await getSessao();
+  const lojasOnline = await getLojasOnline();
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -319,6 +321,49 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* Lojas online criadas */}
+      {lojasOnline && lojasOnline.length > 0 && (
+        <section id="lojas-criadas" className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+          <div className="max-w-2xl">
+            <h2 className="text-3xl font-bold tracking-tight text-zinc-50">
+              Lojas abertas ao público
+            </h2>
+            <p className="mt-3 text-zinc-400">
+              Explore as lojas que já vendem online com o ShopLink e faça as suas compras.
+            </p>
+          </div>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {lojasOnline.map((loja) => (
+              <Link
+                key={loja.id}
+                href={`/loja/${loja.slug_publico}`}
+                className="group flex flex-col justify-between rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition-colors hover:border-emerald-500/30 hover:bg-zinc-900"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+                      <Store className="h-5 w-5" />
+                    </div>
+                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] text-emerald-300">
+                      Aberta
+                    </span>
+                  </div>
+                  <h3 className="mt-4 text-lg font-semibold text-zinc-50 group-hover:text-emerald-400 transition-colors">
+                    {loja.nome}
+                  </h3>
+                  <p className="mt-1 text-sm text-zinc-400">
+                    {loja.cidade || "Moçambique"} · {loja.tipo_loja === "mini_mercado" ? "Mini Supermercado" : "Mercearia"}
+                  </p>
+                </div>
+                <div className="mt-6 flex items-center text-sm font-medium text-emerald-400">
+                  Visitar loja <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+      
       {/* Bot de WhatsApp - servico da Tecnoincubadora */}
       <section id="bot-whatsapp" className="border-b border-zinc-800/80 bg-zinc-900/30">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2">

@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { CalendarClock, CheckCircle2, Loader2, RefreshCw, XCircle } from "lucide-react";
+import { useCallback, useEffect, useState, useSearchParams } from "react";
+import { CalendarClock, CheckCircle2, CreditCard, Loader2, RefreshCw, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState, Loading } from "@/components/ui/feedback";
@@ -47,6 +47,9 @@ export function PedidosClient() {
   const [filtro, setFiltro] = useState<string>("");
   const [erro, setErro] = useState<string | null>(null);
   const [aCarregar, setACarregar] = useState(false);
+  const [aPagar, setAPagar] = useState<string | null>(null);
+  const [avisoPagamento, setAvisoPagamento] = useState<string | null>(null);
+  const searchParams = useSearchParams();
 
   const carregar = useCallback(async () => {
     setErro(null);
@@ -65,6 +68,70 @@ export function PedidosClient() {
   useEffect(() => {
     carregar();
   }, [carregar]);
+
+  // Reconcilia pagamento ao voltar do checkout PaySuite
+  useEffect(() => {
+    const pagamentoId = searchParams.get("pagamento_id");
+    if (!pagamentoId) return;
+
+    let cancelado = false;
+    setAPagar(pagamentoId);
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/pedidos/${pagamentoId}/pagar`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelado || !data.status) return;
+
+        if (data.status === "pago") {
+          setAvisoPagamento("Pagamento confirmado. Pedido pronto para confirmação.");
+          await carregar();
+        } else if (data.status === "falhou") {
+          setAvisoPagamento("O pagamento não foi concluído. Pode tentar novamente.");
+          await carregar();
+        } else if (data.status === "pendente") {
+          setAvisoPagamento("Ainda a processar. Verifique o meio de pagamento.");
+        }
+      } catch {
+        // webhook é a fonte de verdade
+      } finally {
+        if (!cancelado) setAPagar(null);
+      }
+    })();
+
+    return () => { cancelado = true; };
+  }, [searchParams, carregar]);
+
+  async function pagarPedido(p: Pedido) {
+    setAPagar(p.id);
+    setAvisoPagamento(null);
+    setErro(null);
+    try {
+      const res = await fetch(`/api/pedidos/${p.id}/pagar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Falha ao iniciar pagamento.");
+      if (data.status === "pago") {
+        setAvisoPagamento("Pagamento confirmado. Pedido pronto para confirmação.");
+        await carregar();
+        return;
+      }
+      if (data.checkout_url) {
+        window.location.assign(data.checkout_url);
+        return;
+      }
+      setAvisoPagamento("Pagamento iniciado. Confirme no meio escolhido e verifique depois.");
+      await carregar();
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Erro inesperado.");
+    } finally {
+      setAPagar(null);
+    }
+  }
 
   async function acao(p: Pedido, acao: string) {
     if (acao === "concluir") {
@@ -135,6 +202,14 @@ export function PedidosClient() {
           {erro}
         </div>
       )}
+      {avisoPagamento && (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300 flex items-center justify-between">
+          <span>{avisoPagamento}</span>
+          <Button variant="ghost" size="sm" onClick={() => setAvisoPagamento(null)}>
+            ×
+          </Button>
+        </div>
+      )}
 
       {pedidos === null ? (
         <Loading label="A carregar pedidos…" />
@@ -188,13 +263,28 @@ export function PedidosClient() {
                       minimumFractionDigits: 2,
                     }).format(Number(p.total))}
                   </span>
-                  <div className="flex gap-2">
-                    {p.status === "aguardando_confirmacao" && (
-                      <Button size="sm" variant="secondary" onClick={() => acao(p, "confirmar")}>
-                        Confirmar
-                      </Button>
-                    )}
-                    {["aguardando_confirmacao", "confirmado", "pronto_levantamento"].includes(p.status) && (
+<div className="flex gap-2">
+                      {p.tipo === "compra_online" && p.status_pagamento === "pendente" && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={aPagar !== null}
+                          onClick={() => pagarPedido(p)}
+                        >
+                          {aPagar === p.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <CreditCard className="h-4 w-4 text-sky-400" />
+                          )}
+                          Pagar
+                        </Button>
+                      )}
+                      {p.status === "aguardando_confirmacao" && (
+                        <Button size="sm" variant="secondary" onClick={() => acao(p, "confirmar")}>
+                          Confirmar
+                        </Button>
+                      )}
+                      {["aguardando_confirmacao", "confirmado", "pronto_levantamento"].includes(p.status) && (
                       <>
                         <Button size="sm" onClick={() => acao(p, "concluir")}>
                           <CheckCircle2 className="h-4 w-4" /> Concluir

@@ -14,60 +14,44 @@ import {
 } from "@/lib/paysuite";
 
 /**
- * Reconcilia o pagamento de licença mais recente que ainda esteja pendente,
- * consultando a PaySuite. É o fallback para quando o webhook não chega.
- * Devolve o estado observado, sem alterar a licença.
+ * Verifica o estado do pagamento pendente mais recente na PaySuite.
+ * NÃO aplica alterações — só lê. O webhook é a fonte de verdade para aplicar.
  */
-async function reconciliarPendente(lojaId: string): Promise<{
+async function verificarPendente(lojaId: string): Promise<{
   status: "pago" | "falhou" | "pendente" | null;
-  recibo?: string;
+  metodo?: string | null;
+  cobrancaId?: string;
 }> {
   const pag = await pool.query(
-    `SELECT id, licenca_id, cobranca_id FROM licenca_pagamento
+    `SELECT id, licenca_id, cobranca_id, metodo
+     FROM licenca_pagamento
      WHERE loja_id = $1 AND status = 'pendente'
      ORDER BY data_criacao DESC LIMIT 1`,
     [lojaId]
   );
   if (pag.rows.length === 0) return { status: null };
 
-  const { id: pagamentoId, licenca_id: licencaId, cobranca_id: cobrancaId } = pag.rows[0];
-  const check = await getPaySuiteCharge(cobrancaId);
-  if (!check.paid && !check.failed) return { status: "pendente" };
+  const { cobranca_id: cobrancaId, metodo } = pag.rows[0];
+  if (!cobrancaId) return { status: "pendente", metodo };
 
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    if (check.paid) {
-      const periodo = await aplicarPagamentoLicenca(client, licencaId, pagamentoId);
-      await client.query("COMMIT");
-      return {
-        status: "pago",
-        recibo: `Período: ${pt(periodo.períodoInicio)} → ${pt(periodo.períodoFim)}`,
-      };
-    }
-    await client.query(
-      `UPDATE licenca_pagamento
-       SET status = 'falhou', observacao = 'Recusado pela PaySuite'
-       WHERE id = $1 AND status = 'pendente'`,
-      [pagamentoId]
-    );
-    await client.query("COMMIT");
-    return { status: "falhou" };
-  } catch (e) {
-    await client.query("ROLLBACK").catch(() => {});
-    throw e;
-  } finally {
-    client.release();
-  }
+  const check = await getPaySuiteCharge(cobrancaId);
+  if (!check.paid && !check.failed) return { status: "pendente", metodo, cobrancaId };
+
+  return {
+    status: check.paid ? "pago" : "falhou",
+    metodo: check.paid ? (metodo === "paysuite" ? null : metodo) : metodo,
+    cobrancaId,
+  };
 }
 
-// GET /api/licenca/pagar -> reconcilia o pagamento pendente (fallback do webhook)
+// GET /api/licenca/pagar -> verifica estado do pagamento pendente (fallback do webhook)
+// NÃO aplica — só informa. O webhook aplica.
 export async function GET() {
   try {
     const r = await apiPapel("dono");
     if (r.response) return r.response;
 
-    const estado = await reconciliarPendente(r.sessao.lojaId);
+    const estado = await verificarPendente(r.sessao.lojaId);
     return NextResponse.json({ ok: true, ...estado });
   } catch (e) {
     console.error("licenca/pagar GET erro:", e);
@@ -76,14 +60,29 @@ export async function GET() {
 }
 
 // POST /api/licenca/pagar
-// Licença mensal (2.500,00 MZN) paga via PaySuite — sem `method`, o cliente
-// escolhe M-Pesa, e-Mola ou Cartão no checkout hospedado da PaySuite.
+// Licença mensal (2.500,00 MZN) via PaySuite — sem `method` = checkout hospedado.
 export async function POST(req: Request) {
   try {
     const r = await apiPapel("dono");
     if (r.response) return r.response;
 
     await garantirLicenca(r.sessao.lojaId);
+
+    // Idempotência: se já há pagamento pendente, reusa a cobrança existente
+    const existente = await pool.query(
+      `SELECT id, cobranca_id, checkout_url FROM licenca_pagamento
+       WHERE loja_id = $1 AND status = 'pendente'
+       ORDER BY data_criacao DESC LIMIT 1`,
+    [r.sessao.lojaId]);
+    if (existente.rows.length > 0 && existente.rows[0].checkout_url) {
+      return NextResponse.json({
+        ok: true,
+        status: "pendente",
+        checkout_url: existente.rows[0].checkout_url,
+        pagamento_id: existente.rows[0].id,
+        reusado: true,
+      });
+    }
 
     const lic = await pool.query(
       `SELECT lc.id, lc.valor_mensal FROM licenca lc WHERE lc.loja_id = $1`,
@@ -97,8 +96,6 @@ export async function POST(req: Request) {
     const valor: number = Number(lic.rows[0].valor_mensal) || 2500;
     const reference = buildLicencaReference();
 
-    // "paysuite" marca que o método ainda não é conhecido; o webhook substitui
-    // pelo método real (mpesa | emola | credit_card) assim que o pagamento confirmar.
     const pag = await pool.query(
       `INSERT INTO licenca_pagamento (licenca_id, loja_id, metodo, valor, referencia_pagamento, status)
        VALUES ($1, $2, 'paysuite', $3, $4, 'pendente')
@@ -108,7 +105,7 @@ export async function POST(req: Request) {
     const pagamentoId = pag.rows[0].id;
 
     const base = appBaseUrl(req);
-    const returnUrl = `${base}/licenca?recibo=1`;
+    const returnUrl = `${base}/licenca?pagamento_id=${pagamentoId}`;
     const webhookUrl = `${base}/api/webhooks/paysuite`;
 
     let charge;
