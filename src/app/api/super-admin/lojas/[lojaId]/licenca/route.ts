@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { requireSessao } from "@/lib/auth";
+import { getSessao } from "@/lib/auth";
 
 // POST /api/super-admin/lojas/[lojaId]/licenca
 // body: { dias: number }  -> estende o trial/licença da loja em N dias
@@ -11,7 +11,10 @@ export async function POST(
   { params }: { params: Promise<{ lojaId: string }> }
 ) {
   try {
-    const sessao = await requireSessao();
+    const sessao = await getSessao();
+    if (!sessao) {
+      return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+    }
     if (sessao.papel !== "dono") {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }

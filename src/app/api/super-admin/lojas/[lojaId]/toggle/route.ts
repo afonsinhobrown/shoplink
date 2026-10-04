@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { requireSessao } from "@/lib/auth";
+import { getSessao } from "@/lib/auth";
 
 export async function POST(req: Request, { params }: { params: Promise<{ lojaId: string }> }) {
   try {
-    const sessao = await requireSessao();
+    const sessao = await getSessao();
+    if (!sessao) {
+      return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+    }
     
     // Apenas o dono principal ou e-mail especifico pode aceder
     const isSuperAdmin = sessao.email === "afonso@example.com" || sessao.email === "nachingweya@gmail.com" || sessao.email === "afonsinhobrown@gmail.com" || process.env.SUPER_ADMIN_EMAIL === sessao.email;
