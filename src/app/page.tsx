@@ -429,6 +429,42 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* Ad: Cristina */}
+      <section className="border-b border-zinc-800/80 bg-zinc-950">
+        <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+          <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent" />
+            <div className="grid lg:grid-cols-2 gap-8 items-center p-8 sm:p-12">
+              <div className="relative z-10">
+                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                  Parceria ShopLink
+                </span>
+                <h2 className="mt-5 text-3xl font-bold tracking-tight text-zinc-50">
+                  Destaque o seu negócio
+                </h2>
+                <p className="mt-3 text-zinc-400">
+                  Faça como os nossos parceiros e alcance mais clientes todos os dias. 
+                  Impulsione as suas vendas com a nossa plataforma.
+                </p>
+                <div className="mt-8">
+                  <Button variant="outline" size="lg">
+                    Saber mais
+                  </Button>
+                </div>
+              </div>
+              <div className="relative aspect-video lg:aspect-square overflow-hidden rounded-2xl border border-zinc-800">
+                <Image
+                  src="/cristina.jpeg"
+                  alt="Anúncio Parceiro"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Preço */}
       <section id="preco" className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
