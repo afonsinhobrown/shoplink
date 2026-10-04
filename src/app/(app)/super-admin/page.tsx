@@ -28,10 +28,17 @@ export default async function SuperAdminPage() {
       t.telefone,
       t.nuit,
       t.plano,
+      lc.estado as licenca_estado,
+      lc.data_inicio as licenca_data_inicio,
+      lc.data_fim as licenca_data_fim,
+      GREATEST(0, CEIL(EXTRACT(EPOCH FROM (COALESCE(lc.data_fim, now()) - now())) / 86400))::int as licenca_dias_restantes,
+      (lc.data_fim IS NOT NULL AND lc.data_fim < now()) as licenca_expirada,
+      (SELECT COUNT(*) FROM licenca_pagamento lp WHERE lp.licenca_id = lc.id AND lp.status = 'pago') as total_pagamentos,
       (SELECT COUNT(*) FROM utilizador_loja ul WHERE ul.loja_id = l.id) as total_utilizadores,
       (SELECT COUNT(*) FROM venda v WHERE v.loja_id = l.id AND v.status = 'concluida') as total_vendas
     FROM loja l
     JOIN tenant t ON t.id = l.tenant_id
+    LEFT JOIN licenca lc ON lc.loja_id = l.id
     ORDER BY l.data_criacao DESC
   `);
 
