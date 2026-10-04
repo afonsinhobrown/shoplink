@@ -40,6 +40,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { href: "/dashboard", label: "Início", icon: LayoutDashboard, roles: ["dono", "gestor", "caixa", "stock"] },
+  { href: "/", label: "Página Principal (Site)", icon: Store, roles: ["dono", "gestor", "caixa", "stock"] },
   { href: "/pos", label: "PDV", icon: ShoppingCart, roles: ["dono", "gestor", "caixa", "stock"] },
   { href: "/produtos", label: "Produtos", icon: Package, roles: ["dono", "gestor", "caixa", "stock"] },
   { href: "/stock", label: "Stock", icon: Boxes, roles: ["dono", "gestor", "stock"] },
@@ -60,7 +61,7 @@ const NAV: NavItem[] = [
 
 function Logo() {
   return (
-    <div className="flex items-center gap-2.5">
+    <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg shadow-emerald-500/30">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
@@ -72,7 +73,7 @@ function Logo() {
         <p className="text-base font-bold tracking-tight text-zinc-50">ShopLink</p>
         <p className="text-[10px] uppercase tracking-widest text-zinc-500">POS para mercearias</p>
       </div>
-    </div>
+    </Link>
   );
 }
 

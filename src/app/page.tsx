@@ -112,7 +112,7 @@ export default async function LandingPage() {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg shadow-emerald-500/30">
               <Store className="h-[18px] w-[18px] text-white" />
             </div>
@@ -124,8 +124,11 @@ export default async function LandingPage() {
                 POS para mercearias
               </p>
             </div>
-          </div>
+          </Link>
           <nav className="hidden items-center gap-6 text-sm text-zinc-400 md:flex">
+            <Link href="/" className="font-semibold text-emerald-400 hover:text-emerald-300">
+              Página Principal
+            </Link>
             <a href="#funcionalidades" className="hover:text-zinc-100">
               Funcionalidades
             </a>
