@@ -26,6 +26,7 @@ export interface ProdutoPublico {
   url_thumbnail: string | null;
   imagem: string | null;
   quantidade_disponivel: number;
+  link_externo?: string | null;
 }
 
 export default async function LojaPage({
@@ -58,7 +59,7 @@ export default async function LojaPage({
   }
 
   const produtosR = await pool.query(
-    `SELECT p.id, p.nome, p.descricao_publica, p.preco_venda, p.unidade_medida,
+    `SELECT p.id, p.nome, p.descricao_publica, p.preco_venda, p.unidade_medida, p.link_externo,
             c.nome AS categoria, pi.url_thumbnail, pi.url AS imagem,
             COALESCE(v.quantidade_disponivel, 0) AS quantidade_disponivel
      FROM produto p

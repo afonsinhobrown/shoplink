@@ -503,14 +503,22 @@ export function LojaClient({
                         </Badge>
                       )}
                     </div>
-                    <Button
-                      size="sm"
-                      variant={qtd(p.id) > 0 ? "secondary" : "primary"}
-                      disabled={foraDeStock}
-                      onClick={() => add(p)}
-                    >
-                      {qtd(p.id) > 0 ? `+${qtd(p.id)}` : "Adicionar"}
-                    </Button>
+                    {p.categoria === "Licenças SaaS TECNOINCUBADORA" ? (
+                      <a href={p.link_externo || "#"} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" variant="primary">
+                          Comprar
+                        </Button>
+                      </a>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant={qtd(p.id) > 0 ? "secondary" : "primary"}
+                        disabled={foraDeStock}
+                        onClick={() => add(p)}
+                      >
+                        {qtd(p.id) > 0 ? `+${qtd(p.id)}` : "Adicionar"}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </article>

@@ -36,6 +36,7 @@ const VAZIO: Omit<ProdutoDTO, "id" | "stock_atual"> = {
   disponivel_online: false,
   descricao_publica: null,
   isento_imposto: false,
+  link_externo: null,
 };
 
 export function ProdutosClient({
@@ -116,6 +117,7 @@ export function ProdutosClient({
       disponivel_online: p.disponivel_online,
       descricao_publica: p.descricao_publica ?? null,
       isento_imposto: p.isento_imposto ?? false,
+      link_externo: p.link_externo ?? null,
     });
     setErro("");
     setModal(true);
@@ -391,6 +393,15 @@ export function ProdutosClient({
               value={form.descricao_publica ?? ""}
               onChange={(e) => set("descricao_publica", e.target.value || null)}
               placeholder="Breve descrição mostrada aos clientes"
+            />
+          </Field>
+
+          <Field label="Link Externo (apenas para produtos como Licenças/SaaS)">
+            <Input
+              type="url"
+              value={form.link_externo ?? ""}
+              onChange={(e) => set("link_externo", e.target.value || null)}
+              placeholder="https://exemplo.com/comprar"
             />
           </Field>
 

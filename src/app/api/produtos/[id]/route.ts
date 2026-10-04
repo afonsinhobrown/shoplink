@@ -35,6 +35,7 @@ export async function PUT(
       disponivel_online,
       descricao_publica,
       isento_imposto,
+      link_externo,
     } = body;
   
     try {
@@ -45,8 +46,8 @@ export async function PUT(
            tipo_venda = $6, unidade_medida = $7,
            preco_custo = $8, preco_venda = $9,
            controla_stock = $10, stock_minimo = $11, ativo = $12,
-           disponivel_online = $13, descricao_publica = $14, isento_imposto = $15
-         WHERE id = $16 RETURNING id`,
+           disponivel_online = $13, descricao_publica = $14, isento_imposto = $15, link_externo = $16
+         WHERE id = $17 RETURNING id`,
         [
           nome?.trim(), codigo_barras || null, sku_interno || null,
           categoria_id ?? null, fornecedor_id ?? null,
@@ -54,7 +55,7 @@ export async function PUT(
           Number(preco_custo) || 0, Number(preco_venda) || 0,
           controla_stock ?? true, Number(stock_minimo) || 0,
           ativo ?? true,
-          disponivel_online ?? false, descricao_publica ?? null, isento_imposto ?? false,
+          disponivel_online ?? false, descricao_publica ?? null, isento_imposto ?? false, link_externo ?? null,
           id,
         ]
       );

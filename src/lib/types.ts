@@ -25,6 +25,7 @@ export interface ProdutoDTO {
   descricao_publica?: string | null;
   isento_imposto?: boolean;
   imagem?: string | null;
+  link_externo?: string | null;
 }
 
 export interface ImagemProdutoDTO {

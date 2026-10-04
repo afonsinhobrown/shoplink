@@ -28,7 +28,7 @@ export async function GET(
   }
 
   const produtos = await pool.query(
-    `SELECT p.id, p.nome, p.descricao_publica, p.preco_venda, p.unidade_medida,
+    `SELECT p.id, p.nome, p.descricao_publica, p.preco_venda, p.unidade_medida, p.link_externo,
             p.categoria_id, c.nome AS categoria,
             pi.url_thumbnail, pi.url AS imagem,
             COALESCE(v.quantidade_disponivel, 0) AS quantidade_disponivel
