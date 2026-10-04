@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import { readdirSync } from "node:fs";
+import path from "node:path";
 import {
   ArrowRight,
   Banknote,
@@ -19,8 +21,22 @@ import {
   Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PublicidadeCarousel } from "@/components/landing/publicidade-carousel";
 import { getSessao } from "@/lib/auth";
 import { getLojasOnline } from "@/lib/queries";
+
+// Lista automaticamente todas as imagens da pasta public/publicidade.
+function listarPublicidade(): string[] {
+  const pasta = path.join(process.cwd(), "public", "publicidade");
+  try {
+    return readdirSync(pasta)
+      .filter((f) => /\.(png|jpe?g|webp|gif|avif)$/i.test(f))
+      .sort()
+      .map((f) => `/publicidade/${encodeURIComponent(f)}`);
+  } catch {
+    return [];
+  }
+}
 
 const FUNCIONALIDADES = [
   {
@@ -106,6 +122,7 @@ const VANTAGENS_BOT = [
 export default async function LandingPage() {
   const sessao = await getSessao();
   const lojasOnline = await getLojasOnline();
+  const publicidades = listarPublicidade();
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -137,6 +154,9 @@ export default async function LandingPage() {
             </a>
             <a href="#bot-whatsapp" className="hover:text-zinc-100">
               Bot WhatsApp
+            </a>
+            <a href="#publicidade" className="hover:text-zinc-100">
+              Publicidade
             </a>
             <a href="#preco" className="hover:text-zinc-100">
               Preço
@@ -219,6 +239,29 @@ export default async function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Publicidade - imagens da pasta public/publicidade */}
+      {publicidades.length > 0 && (
+        <section id="publicidade" className="border-b border-zinc-800/80 bg-zinc-900/30">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+            <div className="max-w-2xl">
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                Publicidade
+              </span>
+              <h2 className="mt-4 text-3xl font-bold tracking-tight text-zinc-50">
+                Veja as nossas peças de publicidade
+              </h2>
+              <p className="mt-3 text-zinc-400">
+                Arraste para o lado para ver todas. Novas imagens entram aqui
+                automaticamente, basta enviá-las para a pasta de publicidade.
+              </p>
+            </div>
+            <div className="mt-8">
+              <PublicidadeCarousel imagens={publicidades} />
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Ad: Cristina */}
       <section className="border-b border-zinc-800/80 bg-zinc-950">
