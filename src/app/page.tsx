@@ -249,74 +249,35 @@ export default async function LandingPage() {
 
       {/* Loja online */}
       <section id="loja-online" className="border-y border-zinc-800/80 bg-zinc-900/30">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-300">
-              <Smartphone className="h-3.5 w-3.5" />
-              Opcional · incluído na licença
-            </span>
-            <h2 className="mt-5 text-3xl font-bold tracking-tight text-zinc-50">
-              Venda online, se quiser
-            </h2>
-            <p className="mt-3 text-zinc-400">
-              A loja online é opcional. Se ativar, cada loja ganha uma montra
-              pública com os produtos disponíveis. Os clientes podem reservar ou
-              comprar e pagar por M-Pesa, e-Mola ou cartão, e a encomenda entra
-              diretamente no seu painel de pedidos. Não ativou? Usa o ShopLink
-              normalmente, só para gerir a loja.
-            </p>
-            <ul className="mt-6 space-y-3">
-              {["Ative ou desative quando quiser, sem custo extra", "Catálogo público por loja", "Pedidos confirmados com um clique no balcão"].map(
-                (t) => (
-                  <li key={t} className="flex items-start gap-2.5 text-sm text-zinc-300">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-                    {t}
-                  </li>
-                )
-              )}
-            </ul>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link href="/registar">
-                <Button>Criar a minha conta</Button>
-              </Link>
-              <Link
-                href="/loja/mercearia-central"
-                className="inline-flex h-10 items-center rounded-xl border border-zinc-700 px-4 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
-              >
-                Ver loja de exemplo
-              </Link>
-            </div>
-          </div>
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-              <div>
-                <p className="font-semibold text-zinc-50">Mercearia Central</p>
-                <p className="text-xs text-zinc-500">Maputo · mini supermercado</p>
-              </div>
-              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] text-emerald-300">
-                Aberta
-              </span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {[
-                { nome: "Arroz 5kg", preco: "450,00 MZN" },
-                { nome: "Óleo 1L", preco: "180,00 MZN" },
-                { nome: "Açúcar 1kg", preco: "95,00 MZN" },
-              ].map((p) => (
-                <div
-                  key={p.nome}
-                  className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3"
-                >
-                  <span className="text-sm text-zinc-200">{p.nome}</span>
-                  <span className="text-sm font-medium text-emerald-400">
-                    {p.preco}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 rounded-xl bg-emerald-500 px-4 py-3 text-center text-sm font-semibold text-white">
-              Finalizar compra
-            </div>
+        <div className="mx-auto max-w-4xl px-4 py-20 sm:px-6 text-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-300">
+            <Smartphone className="h-3.5 w-3.5" />
+            Opcional · incluído na licença
+          </span>
+          <h2 className="mt-5 text-3xl font-bold tracking-tight text-zinc-50">
+            Venda online, se quiser
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-zinc-400">
+            A loja online é opcional. Se ativar, cada loja ganha uma montra
+            pública com os produtos disponíveis. Os clientes podem reservar ou
+            comprar e pagar por M-Pesa, e-Mola ou cartão, e a encomenda entra
+            diretamente no seu painel de pedidos. Não ativou? Usa o ShopLink
+            normalmente, só para gerir a loja.
+          </p>
+          <ul className="mt-6 flex flex-col items-center space-y-3">
+            {["Ative ou desative quando quiser, sem custo extra", "Catálogo público por loja", "Pedidos confirmados com um clique no balcão"].map(
+              (t) => (
+                <li key={t} className="flex items-center gap-2.5 text-sm text-zinc-300">
+                  <Check className="h-4 w-4 shrink-0 text-emerald-400" />
+                  {t}
+                </li>
+              )
+            )}
+          </ul>
+          <div className="mt-8 flex justify-center gap-3">
+            <Link href="/registar">
+              <Button size="lg">Criar a minha conta</Button>
+            </Link>
           </div>
         </div>
       </section>
