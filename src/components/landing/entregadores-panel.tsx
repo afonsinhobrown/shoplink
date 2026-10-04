@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Truck,
   Star,
@@ -8,9 +8,12 @@ import {
   Navigation,
   MapPin as MapPinIcon,
   CheckCircle2,
+  Map,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 interface Entregador {
   id: string;
@@ -62,12 +65,37 @@ const VEHICLE_ICON: Record<string, string> = {
   FOOT: "🚶",
 };
 
+const DEFAULT_CENTER = { lat: -25.9653, lng: 32.5892, zoom: 6 }; // Maputo
+
+function createVehicleMarker(vehicleType: string) {
+  const emoji = VEHICLE_ICON[vehicleType] || "🚚";
+  return L.divIcon({
+    className: "vehicle-marker",
+    html: `<div style="font-size:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4));">${emoji}</div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+  });
+}
+
+function createSelectedMarker() {
+  return L.divIcon({
+    className: "selected-marker",
+    html: `<div style="font-size:36px;filter:drop-shadow(0 2px 6px rgba(16,185,129,0.6));">📍</div>`,
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+  });
+}
+
 export function EntregadoresPanel() {
   const [entregadores, setEntregadores] = useState<Entregador[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [entregadorSelecionado, setEntregadorSelecionado] = useState<Entregador | null>(null);
   const [cidadeSelecionada, setCidadeSelecionada] = useState<string>("");
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<L.Map | null>(null);
+  const markersRef = useRef(new (globalThis.Map as new () => Map<string, L.Marker>)());
 
+  // Fetch entregadores
   useEffect(() => {
     async function fetchEntregadores() {
       setCarregando(true);
@@ -87,29 +115,79 @@ export function EntregadoresPanel() {
     fetchEntregadores();
   }, [cidadeSelecionada]);
 
+  // Initialize / update map
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const center = entregadorSelecionado
+      ? { lat: entregadorSelecionado.currentLatitude, lng: entregadorSelecionado.currentLongitude, zoom: 14 }
+      : cidadeSelecionada && CITY_COORDS[cidadeSelecionada]
+        ? { ...CITY_COORDS[cidadeSelecionada], zoom: 12 }
+        : DEFAULT_CENTER;
+
+    if (!mapInstance.current) {
+      mapInstance.current = L.map(mapRef.current, {
+        center: [center.lat, center.lng],
+        zoom: center.zoom,
+        zoomControl: true,
+        attributionControl: true,
+      });
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(mapInstance.current);
+    } else {
+      mapInstance.current.setView([center.lat, center.lng], center.zoom);
+    }
+
+    // Clear old markers
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current.clear();
+
+    // Add markers for each entregador
+    entregadores.forEach((e) => {
+      const marker = L.marker([e.currentLatitude, e.currentLongitude], {
+        icon: createVehicleMarker(e.vehicleType),
+      })
+        .bindPopup(
+          `<div style="min-width:180px;">
+            <strong>${e.name}</strong><br/>
+            ${VEHICLE_LABEL[e.vehicleType] || e.vehicleType} — ${e.vehicleColor} (${e.plateNumber})<br/>
+            ⭐ ${e.rating.toFixed(1)}<br/>
+            <button onclick="window.dispatchEvent(new CustomEvent('select-entregador',{detail:'${e.id}'}))" 
+              style="margin-top:8px;padding:4px 10px;background:#10b981;color:white;border:none;border-radius:4px;cursor:pointer;">
+              Selecionar
+            </button>
+          </div>`
+        )
+        .addTo(mapInstance.current!);
+      markersRef.current.set(e.id, marker);
+    });
+
+    // Highlight selected
+    if (entregadorSelecionado) {
+      const m = markersRef.current.get(entregadorSelecionado.id);
+      if (m) {
+        m.setIcon(createSelectedMarker());
+        m.openPopup();
+      }
+    }
+
+    // Listen for popup button clicks
+    const handler = (ev: CustomEvent<string>) => {
+      const id = ev.detail;
+      const e = entregadores.find((x) => x.id === id);
+      if (e) setEntregadorSelecionado(e);
+    };
+    window.addEventListener("select-entregador", handler as EventListener);
+    return () => window.removeEventListener("select-entregador", handler as EventListener);
+  }, [entregadores, entregadorSelecionado, cidadeSelecionada]);
+
   const handleSelecionarEntregador = (e: Entregador) => {
     setEntregadorSelecionado(e);
-    // Redireciona para o sistema de entregas com o entregador pré-selecionado
-    // Assumindo que o sistema de entregas está no mesmo domínio ou subdomínio
     const url = `/entregas/nova?entregador=${e.id}&lat=${e.currentLatitude}&lng=${e.currentLongitude}`;
     window.open(url, "_blank");
   };
-
-  const getMapCenter = () => {
-    if (entregadorSelecionado) {
-      return { lat: entregadorSelecionado.currentLatitude, lng: entregadorSelecionado.currentLongitude, zoom: 14 };
-    }
-    if (cidadeSelecionada && CITY_COORDS[cidadeSelecionada]) {
-      return { ...CITY_COORDS[cidadeSelecionada], zoom: 12 };
-    }
-    return { lat: -25.9653, lng: 32.5892, zoom: 6 }; // Maputo default
-  };
-
-  const mapCenter = getMapCenter();
-
-  // Google Maps embed iframe (simples, sem API key para visualização)
-  // Para produção, usar Google Maps JS API ou Leaflet
-  const mapSrc = `https://maps.google.com/maps?q=${mapCenter.lat},${mapCenter.lng}&z=${mapCenter.zoom}&output=embed&t=m`;
 
   return (
     <section id="entregadores" className="border-y border-zinc-800/80 bg-zinc-900/30">
@@ -226,23 +304,16 @@ export function EntregadoresPanel() {
             </div>
           </Card>
 
-          {/* Mapa */}
+          {/* Mapa Leaflet + OpenStreetMap */}
           <Card className="border-zinc-800 bg-zinc-900/60 overflow-hidden">
             <div className="p-4 border-b border-zinc-800">
               <h3 className="flex items-center gap-2 text-lg font-semibold text-zinc-100">
-                <MapPin className="h-5 w-5 text-emerald-500" />
-                Mapa de entregadores
+                <Map className="h-5 w-5 text-emerald-500" />
+                Mapa de entregadores (OpenStreetMap)
               </h3>
             </div>
             <div className="relative h-[500px]">
-              <iframe
-                title="Mapa de entregadores disponíveis"
-                src={mapSrc}
-                className="w-full h-full border-0"
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+              <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
               {entregadorSelecionado && (
                 <div className="absolute bottom-4 left-4 right-4 bg-zinc-950/95 backdrop-blur rounded-xl border border-zinc-800 p-3">
                   <div className="flex items-center justify-between">
