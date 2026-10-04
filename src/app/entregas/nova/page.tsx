@@ -11,7 +11,7 @@ export default async function EntregasNovaRedirect({
   const lng = params.lng;
 
   const deliverySystemBase = process.env.NEXT_PUBLIC_DELIVERY_SYSTEM_URL || "https://entregas.tecnoincubadora.com";
-  const url = `${deliverySystemBase}/nova?entregador=${entregador}&lat=${lat}&lng=${lng}`;
+  const url = `${deliverySystemBase}/entregadores/solicitar?entregadorId=${entregador}&lat=${lat}&lng=${lng}`;
 
   return (
     <html>
