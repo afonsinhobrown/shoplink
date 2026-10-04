@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { Pool, PoolClient } from "pg";
 
 const DELIVERY_DB_URL = "postgresql://neondb_owner:npg_4LY2caWCfsHM@ep-raspy-mode-agdi8d9m-pooler.c-2.eu-central-1.aws.neon.tech/entregasmoz?sslmode=require&channel_binding=require";
 
@@ -82,46 +82,78 @@ export async function createDeliveryOrder(params: {
   totalAmount: number;
   deliveryFee: number;
   notes?: string;
+  externalId?: string; // ID do pedido no ShopLink
+  items?: { productId: string; quantity: number; price: number }[];
 }) {
   const pool = getDeliveryPool();
   const now = new Date().toISOString();
   const id = `ord-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-  const result = await pool.query(`
-    INSERT INTO "Order" (
-      id, "providerId", "clientId", "deliveryPersonId",
-      "pickupAddress", "pickupLatitude", "pickupLongitude",
-      "deliveryAddress", "deliveryLatitude", "deliveryLongitude",
-      "totalAmount", "deliveryFee", "platformFee", "providerAmount", "deliveryAmount",
-      status, "paymentMethod", "isPaidByClient", "isCashPayment",
-      "createdAt", "updatedAt"
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
-    RETURNING id, status, "createdAt"
-  `, [
-    id,
-    params.providerId,
-    params.clientId,
-    params.deliveryPersonId,
-    params.pickupAddress,
-    params.pickupLatitude,
-    params.pickupLongitude,
-    params.deliveryAddress,
-    params.deliveryLatitude,
-    params.deliveryLongitude,
-    params.totalAmount,
-    params.deliveryFee,
-    0, // platformFee
-    params.totalAmount - params.deliveryFee, // providerAmount
-    params.deliveryFee, // deliveryAmount
-    "PENDING",
-    "CASH", // paymentMethod - cash on delivery
-    false, // isPaidByClient - paid on delivery
-    true, // isCashPayment
-    now,
-    now,
-  ]);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
 
-  return result.rows[0];
+    const result = await client.query(`
+      INSERT INTO "Order" (
+        id, "providerId", "clientId", "deliveryPersonId",
+        "pickupAddress", "pickupLatitude", "pickupLongitude",
+        "deliveryAddress", "deliveryLatitude", "deliveryLongitude",
+        "totalAmount", "deliveryFee", "platformFee", "providerAmount", "deliveryAmount",
+        status, "paymentMethod", "isPaidByClient", "isCashPayment",
+        "externalId", "createdAt", "updatedAt"
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+      RETURNING id, status, "createdAt"
+    `, [
+      id,
+      params.providerId,
+      params.clientId,
+      params.deliveryPersonId,
+      params.pickupAddress,
+      params.pickupLatitude,
+      params.pickupLongitude,
+      params.deliveryAddress,
+      params.deliveryLatitude,
+      params.deliveryLongitude,
+      params.totalAmount,
+      params.deliveryFee,
+      0, // platformFee
+      params.totalAmount - params.deliveryFee, // providerAmount
+      params.deliveryFee, // deliveryAmount
+      "PENDING",
+      "CASH", // paymentMethod - cash on delivery
+      false, // isPaidByClient - paid on delivery
+      true, // isCashPayment
+      params.externalId ?? null,
+      now,
+      now,
+    ]);
+
+    const orderId = result.rows[0].id;
+
+    // Inserir itens do pedido
+    if (params.items && params.items.length > 0) {
+      for (const item of params.items) {
+        await client.query(`
+          INSERT INTO "OrderItem" (id, "orderId", "productId", quantity, price)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [
+          `oi-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+          orderId,
+          item.productId,
+          item.quantity,
+          item.price,
+        ]);
+      }
+    }
+
+    await client.query("COMMIT");
+    return result.rows[0];
+  } catch (e) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
 }
 
 export async function getProviderByShopLinkSlug(slug: string) {

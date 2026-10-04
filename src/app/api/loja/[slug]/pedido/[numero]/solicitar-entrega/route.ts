@@ -39,6 +39,14 @@ export async function POST(
        WHERE po.loja_id = $1 AND po.numero_pedido = $2`,
       [L.id, numero]
     );
+
+    const itens = await pool.query(
+      `SELECT poi.quantidade, poi.preco_unitario, p.nome
+       FROM pedido_online_item poi
+       JOIN produto p ON p.id = poi.produto_id
+       WHERE poi.pedido_online_id = $1`,
+      [pedido.rows[0].id]
+    );
     if (pedido.rows.length === 0) {
       return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 });
     }
@@ -74,6 +82,12 @@ export async function POST(
       deliveryLongitude: deliveryLongitude || pickupCoords.lng,
       totalAmount: Number(P.total),
       deliveryFee: 50, // taxa fixa por enquanto
+      externalId: P.numero_pedido, // liga ao pedido ShopLink
+      items: itens.rows.map((i) => ({
+        productId: i.nome, // usar nome como identificador temporário
+        quantity: i.quantidade,
+        price: Number(i.preco_unitario),
+      })),
     });
 
     return NextResponse.json({
