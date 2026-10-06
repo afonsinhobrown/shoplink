@@ -33,6 +33,14 @@ export default async function DashboardPage() {
         <p className="mt-1 text-sm text-zinc-500">
           Resumo de hoje em {sessao.lojaNome}
         </p>
+        <a 
+          href="https://www.credential.net/53726c6f-a162-47f9-aaba-4e2988f78240"
+          target="_blank"
+          rel="noopener noreferrer" 
+          className="mt-2 inline-block text-xs font-medium text-blue-400 hover:text-blue-300 underline underline-offset-2"
+        >
+          Google Certified: AI-Powered Shopping Ads Specialist
+        </a>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">

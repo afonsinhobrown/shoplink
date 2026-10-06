@@ -204,10 +204,20 @@ export default async function LandingPage() {
           <div className="absolute -bottom-24 right-0 h-72 w-72 rounded-full bg-sky-500/10 blur-3xl" />
         </div>
         <div className="relative mx-auto max-w-6xl px-4 py-20 text-center sm:px-6 sm:py-28">
-          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-medium text-emerald-300">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Feito para mercearias e mini supermercados de Moçambique
-          </span>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-medium text-emerald-300">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Feito para mercearias e mini supermercados de Moçambique
+            </span>
+            <a
+              href="https://www.credential.net/53726c6f-a162-47f9-aaba-4e2988f78240"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3.5 py-1.5 text-xs font-medium text-blue-300 hover:bg-blue-500/20 transition-colors"
+            >
+              Google Certified: AI-Powered Shopping Ads Specialist
+            </a>
+          </div>
           <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-zinc-50 sm:text-5xl">
             Gerencie a sua loja,{" "}
             <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
