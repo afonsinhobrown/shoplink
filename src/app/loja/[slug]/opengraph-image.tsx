@@ -27,7 +27,7 @@ export default async function Image({
         (
           <div
             style={{
-              fontSize: 64,
+              fontSize: 48,
               background: "black",
               color: "white",
               width: "100%",
@@ -37,7 +37,7 @@ export default async function Image({
               justifyContent: "center",
             }}
           >
-            Loja não encontrada
+            Loja não encontrada (slug: {slug || 'undefined'})
           </div>
         ),
         {
