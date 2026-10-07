@@ -1,7 +1,55 @@
 import { pool } from "@/lib/db";
 import { LojaClient } from "./loja-client";
+import { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+
+  const lojaR = await pool.query(
+    `SELECT id, nome FROM loja WHERE slug_publico = $1 AND ativo = true`,
+    [slug]
+  );
+  const loja = lojaR.rows[0];
+
+  if (!loja) {
+    return {
+      title: "Loja não encontrada | ShopLink",
+    };
+  }
+
+  const produtosR = await pool.query(
+    `SELECT nome FROM produto 
+     WHERE loja_id = $1 AND ativo = true AND disponivel_online = true 
+     ORDER BY random() LIMIT 5`,
+    [loja.id]
+  );
+
+  const nomes = produtosR.rows.map((p) => p.nome).join(", ");
+  const descricao = nomes
+    ? `Compre online na loja ${loja.nome}. Produtos como ${nomes} e muito mais.`
+    : `Visite a loja ${loja.nome} no ShopLink e faça a sua encomenda online.`;
+
+  return {
+    title: `${loja.nome} | ShopLink`,
+    description: descricao,
+    openGraph: {
+      title: `${loja.nome} no ShopLink`,
+      description: descricao,
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title: `${loja.nome} no ShopLink`,
+      description: descricao,
+    },
+  };
+}
 
 export interface LojaPublica {
   id: string;

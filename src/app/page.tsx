@@ -25,6 +25,7 @@ import { PublicidadeCarousel } from "@/components/landing/publicidade-carousel";
 import { EntregadoresPanel } from "@/components/landing/entregadores-panel";
 import { getSessao } from "@/lib/auth";
 import { getLojasOnline } from "@/lib/queries";
+import { ShareStoreButton } from "@/components/landing/share-store-button";
 
 // Lista automaticamente todas as imagens da pasta public/publicidade.
 function listarPublicidade(): string[] {
@@ -473,12 +474,18 @@ export default async function LandingPage() {
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
-                      <Store className="h-5 w-5" />
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+                        <Store className="h-5 w-5" />
+                      </div>
+                      <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] text-emerald-300">
+                        Aberta
+                      </span>
                     </div>
-                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] text-emerald-300">
-                      Aberta
-                    </span>
+                    {/* Botão de Partilhar que não navega */}
+                    <div className="z-10 relative">
+                      <ShareStoreButton storeName={loja.nome} storeSlug={loja.slug_publico} />
+                    </div>
                   </div>
                   <h3 className="mt-4 text-lg font-semibold text-zinc-50 group-hover:text-emerald-400 transition-colors">
                     {loja.nome}
