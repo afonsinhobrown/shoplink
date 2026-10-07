@@ -39,6 +39,7 @@ export async function generateMetadata({
     title: `${loja.nome} | ShopLink`,
     description: descricao,
     openGraph: {
+      siteName: "ShopLink",
       title: `${loja.nome} no ShopLink`,
       description: descricao,
       type: "website",
