@@ -1,6 +1,9 @@
 import { ImageResponse } from "next/og";
 import { pool } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const alt = "Preview da loja";
 export const size = {
   width: 1200,
